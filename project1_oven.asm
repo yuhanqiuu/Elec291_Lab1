@@ -31,6 +31,7 @@ START_STOP  equ p1.3 ; start/stop button
 INCREMENT   equ p1.5 ; increment button
 DECREMENT   equ p1.6 ; decrement button
 SWITCH_MODE equ p1.7 ; switch stting mode: soak temp -> soak time -> reflow temp -> reflow time
+SPEAKER     equ p3.0 ; speaker pin
 ;---------------------------------------------
 ORG 0x0000
 	ljmp main
@@ -55,7 +56,6 @@ $NOLIST
 $include(LCD_4bit.inc) ; A library of LCD related functions and utility macros
 $LIST
 
-
 ;---------------------------------;
 ; Define variables here           ;
 ;---------------------------------;
@@ -75,7 +75,7 @@ soak_temp: ds 5 ; temp parameter for soak
 ;---------------------------------------------
 
 ;---------------------------------;
-; Define flags here           ;
+; Define flags here               ;
 ;---------------------------------;
 BSEG
 mf: dbit 1
