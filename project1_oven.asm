@@ -42,3 +42,9 @@ $NOLIST
 $include(LCD_4bit.inc) ; A library of LCD related functions and utility macros
 $LIST
 
+
+
+Timer2_ISR_done:
+	pop psw
+	pop acc
+	reti
