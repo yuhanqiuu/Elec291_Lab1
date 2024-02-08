@@ -23,11 +23,20 @@ TIMER0_RELOAD EQU ((65536-(CLK/TIMER0_RATE)))
 TIMER2_RATE   EQU 1000     ; 1000Hz, for a timer tick of 1ms
 TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
 
+;---------------------------------;
+; Define any buttons & pins here  ;
+;---------------------------------;
+;!!!!!arbiturary value for now
+START_STOP  equ p1.3 ; start/stop button
+INCREMENT   equ p1.5 ; increment button
+DECREMENT   equ p1.6 ; decrement button
+SWITCH_MODE equ p1.7 ; switch stting mode: soak temp -> soak time -> reflow temp -> reflow time
+;---------------------------------------------
 ORG 0x0000
 	ljmp main
 
 ;---------------------------------;
-; Define any constant string here ;                  ;
+; Define any constant string here ;
 ;---------------------------------;
 ;                1234567890123456    <- This helps determine the location of the counter
 To_Message:  db 'To=xxxC Tj= xxC', 0
@@ -50,7 +59,6 @@ $LIST
 ;---------------------------------;
 ; Define variables here           ;
 ;---------------------------------;
-
 ; These register definitions needed by 'math32.inc'
 DSEG at 30H
 x:   ds 4
@@ -58,11 +66,22 @@ y:   ds 4
 bcd: ds 5   ;temperature variable for reading
 Count1ms:     ds 2 ; Used to determine when half second has passed
 ;BCD_counter:  ds 1 ; The BCD counter incrememted in the ISR and displayed in the main loop
-Sec_counter: ds 1
+Sec_counter: ds 2
 VLED_ADC: ds 2
+reflow_time: ds 2 ; time parameter for reflow
+reflow_temp: ds 5 ; temp parameter for reflow
+soak_time: ds 2 ; time parameter for soak
+soak_temp: ds 5 ; temp parameter for soak
+;---------------------------------------------
 
+;---------------------------------;
+; Define flags here           ;
+;---------------------------------;
 BSEG
 mf: dbit 1
+one_second_flag: dbit 1 ; Set to one in the ISR every time 1000 ms had passed
+start_stop_flag: dbit 1 ; Set to one if button is pressed to start, press again to stop
+;---------------------------------------------
 
 $NOLIST
 $include(math32.inc)
