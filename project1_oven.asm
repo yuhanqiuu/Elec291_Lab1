@@ -56,6 +56,9 @@ DSEG at 30H
 x:   ds 4
 y:   ds 4
 bcd: ds 5   ;temperature variable for reading
+Count1ms:     ds 2 ; Used to determine when half second has passed
+;BCD_counter:  ds 1 ; The BCD counter incrememted in the ISR and displayed in the main loop
+Sec_counter: ds 1
 VLED_ADC: ds 2
 
 BSEG
