@@ -23,6 +23,14 @@ TIMER0_RELOAD EQU ((65536-(CLK/TIMER0_RATE)))
 TIMER2_RATE   EQU 1000     ; 1000Hz, for a timer tick of 1ms
 TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
 
+ORG 0x0000
+	ljmp main
+
+;                     1234567890123456    <- This helps determine the location of the counter
+constant_display:     db '*** ADC TEST ***', 0
+
+cseg
+
 LCD_RS equ P1.3
 LCD_E  equ P1.4
 LCD_D4 equ P0.0
@@ -33,3 +41,4 @@ LCD_D7 equ P0.3
 $NOLIST
 $include(LCD_4bit.inc) ; A library of LCD related functions and utility macros
 $LIST
+
