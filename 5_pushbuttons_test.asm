@@ -192,10 +192,9 @@ increment_reflow_temp:
 increment_reflow_time:
 	inc reflow_time
 	mov a, reflow_time
-	cjne a, #240, LCD_PB_Done
+	cjne a, #75, LCD_PB_Done
 	mov reflow_time, #0x00
 	sjmp LCD_PB_Done
-
 
 start_stop:
 	cpl start_stop_flag
