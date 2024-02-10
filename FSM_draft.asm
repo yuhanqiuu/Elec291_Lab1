@@ -24,6 +24,11 @@ FSM_state: ds 1 ; state variable
 pwm: ds 1
 pwm_counter: ds 1
 
+START_STOP: dbit 1
+SWTICH_MODE: dbit 1
+INCRE: dbit 1
+DECRE: dbit 1
+
 state0: "state 0",0
 state1: "state 1",0
 state2: "state 2",0
@@ -37,6 +42,13 @@ FSM_state0:
     cjne a, #0, FSM_state1
     mov pwm, #0 ; power variable
     Send_Constant_String(#state0)
+
+    jb INCRE, increase ; if the if INCREMENT button is not pressed skip
+	Wait_Milli_Seconds(#50)	; Debounce delay.
+	jb INCRE, increase  ; if the 'CLEAR' button is not pressed skip
+	jnb INCRE, $
+increase:
+
     jb START_STOP, FSM_state0_done
     jnb START_STOP, $   ; wait for key release
     mov FSM_state, #1   ; set FSM_state to 1, next state is state1
