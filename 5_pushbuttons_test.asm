@@ -53,6 +53,7 @@ PB2: dbit 1
 PB3: dbit 1
 PB4: dbit 1
 mf: dbit 1
+start_stop_flag: dbit 1
 
 dseg at 0x30
 soak_temp: ds 1
@@ -164,6 +165,7 @@ LCD_PB:
 	mov c, P1.5
 	mov PB0, c
 	setb P0.3
+	jnb PB0, start_stop
 
 
 LCD_PB_Done:		
@@ -171,15 +173,32 @@ LCD_PB_Done:
 
 increment_soak_temp:
 	inc soak_temp
+	mov a, soak_temp
+	cjne a, #240, LCD_PB_Done
+	mov soak_temp, #0x00
 	sjmp LCD_PB_Done
 increment_soak_time:
 	inc soak_time
+	mov a, soak_time
+	cjne a, #120, LCD_PB_Done
+	mov soak_time, #0x00
 	sjmp LCD_PB_Done
 increment_reflow_temp: 
 	inc reflow_temp
+	mov a, reflow_temp
+	cjne a, #240, LCD_PB_Done
+	mov reflow_temp, #0x00
 	sjmp LCD_PB_Done
 increment_reflow_time:
 	inc reflow_time
+	mov a, reflow_time
+	cjne a, #240, LCD_PB_Done
+	mov reflow_time, #0x00
+	sjmp LCD_PB_Done
+
+
+start_stop:
+	cpl start_stop_flag
 	sjmp LCD_PB_Done
 	
 SendToLCD:
@@ -232,6 +251,7 @@ main:
     mov soak_time, #0
     mov reflow_time, #0
     mov reflow_temp, #0
+	clr start_stop_flag
 	
 Forever:
 	lcall LCD_PB

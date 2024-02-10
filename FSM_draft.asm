@@ -43,14 +43,8 @@ FSM_state0:
     mov pwm, #0 ; power variable
     Send_Constant_String(#state0)
 
-    jb INCRE, increase ; if the if INCREMENT button is not pressed skip
-	Wait_Milli_Seconds(#50)	; Debounce delay.
-	jb INCRE, increase  ; if the 'CLEAR' button is not pressed skip
-	jnb INCRE, $
-increase:
-
-    jb START_STOP, FSM_state0_done
-    jnb START_STOP, $   ; wait for key release
+    ;jb START_STOP, FSM_state0_done
+    ;jnb START_STOP, $   ; wait for key release
     mov FSM_state, #1   ; set FSM_state to 1, next state is state1
 FSM_state0_done:
     ljmp FSM    ;jump back to FSM and reload FSM_state to a
@@ -128,3 +122,4 @@ FSM_state5:
     mov FSM_state, #0
 FSM_state5_done:
     ljmp FSM
+

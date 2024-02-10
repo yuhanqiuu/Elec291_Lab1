@@ -227,6 +227,16 @@ Forever:
 	Load_y(100)
 	lcall mul32
 
+	;vout * 10^6  / 300 / 40.6 +cold junction
+
+	load_y(1000000)
+	lcall mul32
+	load_y (300)
+	lcall div32
+	lcall div32 40.6
+	load_y(22)
+	lcall add32 (40600)
+
 	; Convert to BCD and display
 	lcall hex2bcd
 	lcall Display_formated_BCD
