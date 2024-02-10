@@ -67,13 +67,15 @@ DSEG at 30H
 x:   ds 4
 y:   ds 4
 bcd: ds 5   ;temperature variable for reading
-Count1ms:     ds 2 ; Used to determine when half second has passed
-Sec_counter: ds 2
+Count1ms:     ds 2 ; Used to determine when one second has passed
+seconds: ds 1
 VLED_ADC: ds 2
-reflow_time: ds 2 ; time parameter for reflow	
-reflow_temp: ds 5 ; temp parameter for reflow
-soak_time: ds 2 ; time parameter for soak
-soak_temp: ds 5 ; temp parameter for soak
+reflow_time: ds 1 ; time parameter for reflow	
+reflow_temp: ds 1 ; temp parameter for reflow
+soak_time: ds 1 ; time parameter for soak
+soak_temp: ds 1 ; temp parameter for soak
+pwm_counter: ds 1 ; power counter
+pwm: ds 1 ; variable to count the power percentage
 ;---------------------------------------------
 
 ;---------------------------------;
@@ -81,7 +83,7 @@ soak_temp: ds 5 ; temp parameter for soak
 ;---------------------------------;
 BSEG
 mf: dbit 1
-one_second_flag: dbit 1 ; Set to one in the ISR every time 1000 ms had passed
+s_flag: dbit 1 ; Set to one in the ISR every time 1000 ms had passed
 start_stop_flag: dbit 1 ; Set to one if button is pressed to start, press again to stop
 ;---------------------------------------------
 
@@ -137,64 +139,35 @@ Timer2_Init:
 	clr a
 	mov Count1ms+0, a
 	mov Count1ms+1, a
+	mov pwm, #0
 	; Enable the timer and interrupts
 	orl EIE, #0x80 ; Enable timer 2 interrupt ET2=1
     setb TR2  ; Enable timer 2
 	ret
 
 ;---------------------------------;
-; ISR for timer 2 for +/-         ;
+; ISR for timer 2 ;
 ;---------------------------------;
 Timer2_ISR:
-	clr TF2  ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR.  It is bit addressable.
-	cpl P0.4 ; To check the interrupt rate with oscilloscope. It must be precisely a 1 ms pulse.
-	
-	; The two registers used in the ISR must be saved in the stack
-	push acc
-	push psw
-	
-	; Increment the 16-bit one mili second counter
-	inc Count1ms+0    ; Increment the low 8-bits first
-	mov a, Count1ms+0 ; If the low 8-bits overflow, then increment high 8-bits
-	jnz Inc_Done
-	inc Count1ms+1
-
-;---------------------------------;
-; ISR for timer 0.  Set to execute;
-; every 1/4096Hz to generate a    ;
-; 2048 Hz wave at pin SOUND_OUT   ;
-;---------------------------------;
-
-Inc_Done:
-	; Check if one second has passed
-	mov a, Count1ms+0
-	cjne a, #low(1000), Timer2_ISR_done ; Warning: this instruction changes the carry flag!
-	mov a, Count1ms+1
-	cjne a, #high(1000), Timer2_ISR_done
-	
-	; 1000 milliseconds have passed.  Set a flag so the main program knows
-	setb one_second_flag ; Let the main program know one second had passed
-	;cpl TR0 ; Enable/disable timer/counter 0. This line creates a beep-silence-beep-silence sound.
-	; Reset to zero the milli-seconds counter, it is a 16-bit variable
-	
-	clr a
-	mov Count1ms+0, a
-	mov Count1ms+1, a
-	; Increment the BCD counter
-	;mov a, BCD_counter
-
-    mov a, Sec_counter
-	add a, #0x01 
-	da A
-	mov Sec_counter,a
-	sjmp Timer2_ISR_done
-
-    ;In case it does not work look for the decrement part
-
+clr TF2 ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR. It is
+bit addressable.
+push psw
+push acc
+inc pwm_counter
+clr c
+mov a, pwm
+subb a, pwm_counter ; If pwm_counter <= pwm then c=1
+cpl c
+mov PWM_OUT, c
+mov a, pwm_counter
+cjne a, #100, Timer2_ISR_done
+mov pwm_counter, #0
+inc seconds ; It is super easy to keep a seconds count here
+setb s_flag
 Timer2_ISR_done:
-	pop psw
-	pop acc
-	reti
+pop acc
+pop psw
+reti
 
 ;---------------------------------;
 ; Temperature senseor function    ;
@@ -402,5 +375,5 @@ main:
     
 Forever: ; states and main loop stuff
 
-	
+	ljmp Forever
 END
