@@ -40,9 +40,14 @@ ORG 0x0000
 ;---------------------------------;
 ; Define any constant string here ;
 ;---------------------------------;
-;                1234567890123456    <- This helps determine the location of the counter
-To_Message:  db 'To=xxxC Tj= xxC', 0
-Time_temp_display:db 'sxxx,xx rxxx,xx', 0 ; soak temp,time reflow temp,time
+;                	  1234567890123456    <- This helps determine the location of the counter
+To_Message:  	  db 'To=xxxC Tj= xxC ', 0
+Time_temp_display:db 'sxxx,xx rxxx,xx ', 0 ; soak temp,time reflow temp,time
+Ramp_to_soak:	  db 'RampToSoak s=xxx', 0 ; state 1 display
+Soak_display: 	  db 'Soak 		 s=xxx', 0 ; state 2 display
+Ramp_to_peak: 	  db 'RampToPeak s=xxx', 0 ; state 3 display
+Reflow_display:   db 'Reflow 	 s=xxx', 0 ; state 4 display
+Cooling_display:  db 'Cooling 	 s=xxx', 0 ; state 5 display
 ;---------------------------------------------
 cseg
 
@@ -74,6 +79,7 @@ soak_time: ds 1 ; time parameter for soak
 soak_temp: ds 1 ; temp parameter for soak
 pwm_counter: ds 1 ; power counter
 pwm: ds 1 ; variable to count the power percentage
+temp: ds 3
 ;---------------------------------------------
 
 ;---------------------------------;
@@ -169,6 +175,7 @@ Timer2_ISR:
 	mov pwm_counter, #0
 	inc seconds ; It is super easy to keep a seconds count here
 	setb s_flag
+
 Timer2_ISR_done:
 	pop acc
 	pop psw
@@ -363,7 +370,7 @@ endmac
 ; We can display a number any way we want.  In this case with
 ; four decimal places.
 Display_formated_BCD:
-	Set_Cursor(2, 10)
+	Set_Cursor(1, 3)
 	Display_BCD(bcd+2)
 	Display_char(#'.')
 	Display_BCD(bcd+1)
@@ -438,14 +445,18 @@ Display_Data:
 	Send_BCD(bcd+4)
 	Send_BCD(bcd+3)
 	Send_BCD(bcd+2)
-	mov a, #'.' ; I am guessing the decimal point is here...
-	lcall putchar
-	Send_BCD(bcd+1)
-	Send_BCD(bcd+0)
+	
 	mov a, #'\r' ; Return character
 	lcall putchar
 	mov a, #'\n' ; New-line character
 	lcall putchar
+
+	mov temp+2, bcd+4
+	mov temp+1, bcd+3
+	mov temp+0, bcd+2
+
+	Set_Cursor(2,3)	; Display the amount of seconds that has passed from timer2
+	Display_BCD(#seconds)
 	
 	; Wait 500 ms between conversions
 	mov R2, #250
@@ -475,7 +486,112 @@ main:
 	mov reflow_time, #0x30
 	setb TR2
     
-Forever: ; states and main loop stuff
+;---------------------------------;
+; 		FSM	funtion			      ;
+;---------------------------------;
+FSM:
+    mov a, FSM_state
+FSM_state0:
+    cjne a, #0, FSM_state1
+    mov pwm, #0 ; power variable
+    Send_Constant_String(#state0)
 
-	ljmp Forever
+    ;jb START_STOP, FSM_state0_done
+    ;jnb START_STOP, $   ; wait for key release
+    jnb start_stop_flag, FSM_state0_done
+    mov seconds, #0     ; set time to 0
+    mov FSM_state, #1   ; set FSM_state to 1, next state is state1
+FSM_state0_done:
+    ljmp FSM    ;jump back to FSM and reload FSM_state to a
+
+FSM_state1:
+    cjne a, #1, FSM_state2
+    mov pwm, #100
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Ramp_to_soak)
+    clr c
+    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+    mov a, #0x60
+    subb a, seconds
+    jc abort
+continue:
+    clr c   ; ! i don't know what is c
+    mov a, soak_temp    ; set a to soak temp
+    subb a, temp    ; temp is our currect temp
+    jnc FSM_state1_done
+    mov seconds, #0     ; set time to 0
+    mov FSM_state, #2
+FSM_state1_done:
+    ljmp FSM
+abort:
+    mov a, #50  ; set a to 50 degree
+    subb a, temp
+    jc continue     ; if temp is larger then 50 degree, go back to continue
+    mov FSM_state, #0   ; abort the FSM
+
+stop_state:
+    clr TR2
+    jb start_stop_flag, FSM
+    sjmp stop_state
+
+FSM_state2:
+    cjne a, #2, FSM_state3
+    mov pwm, #20
+    mov a, soak_time    ; set a to soak time
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Soak_display)
+    clr c   ; ! i don't know what is c 
+    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+    subb a, sec    ; temp is our currect sec
+    jnc FSM_state2_done
+    mov seconds, #0     ; set time to 0
+    mov FSM_state, #3
+FSM_state2_done:
+    ljmp FSM
+
+FSM_state3:
+    cjne a, #3, FSM_state4
+    mov pwm, #100
+    mov a, reflow_temp    ; set a to reflow temp
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Ramp_to_peak)
+    clr c   ; ! i don't know what is c 
+    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+    subb a, temp    ; temp is our currect temp
+    jnc FSM_state3_done
+    mov seconds, #0     ; set time to 0
+    mov FSM_state, #4
+FSM_state3_done:
+    ljmp FSM
+
+FSM_state4:
+    cjne a, #4, FSM_state5
+    mov pwm, #20
+    mov a, reflow_time    ; set a to reflow time
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Reflow_display)
+    clr c   ; ! i don't know what is c 
+    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+    subb a, seconds    ; temp is our currect sec
+    jnc FSM_state4_done
+    mov seconds, #0     ; set time to 0
+    mov FSM_state, #5
+FSM_state4_done:
+    ljmp FSM
+
+FSM_state5:
+    cjne a, #5, FSM_state0
+    mov pwm, #0
+    mov a, #60    ; set a to 60
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Cooling_display)
+    clr c   ; ! i don't know what is c
+    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
+    subb a, temp    ; temp is our currect temp, need to be edit
+    jnc FSM_state5_done
+    mov seconds, #0     ; set time to 0
+    mov FSM_state, #0
+FSM_state5_done:
+    ljmp FSM
+
 END
