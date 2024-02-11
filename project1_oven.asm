@@ -80,6 +80,7 @@ soak_temp: ds 1 ; temp parameter for soak
 pwm_counter: ds 1 ; power counter
 pwm: ds 1 ; variable to count the power percentage
 temp: ds 3
+FSM_state: ds 1
 ;---------------------------------------------
 
 ;---------------------------------;
@@ -442,18 +443,14 @@ Display_Data:
 	; Convert to BCD and display
 	lcall hex2bcd
 	lcall Display_formated_BCD
-	Send_BCD(bcd+4)
 	Send_BCD(bcd+3)
 	Send_BCD(bcd+2)
+	Send_BCD(bcd+1)
 	
 	mov a, #'\r' ; Return character
 	lcall putchar
 	mov a, #'\n' ; New-line character
 	lcall putchar
-
-	mov temp+2, bcd+4
-	mov temp+1, bcd+3
-	mov temp+0, bcd+2
 
 	Set_Cursor(2,3)	; Display the amount of seconds that has passed from timer2
 	Display_BCD(#seconds)
@@ -494,10 +491,7 @@ FSM:
 FSM_state0:
     cjne a, #0, FSM_state1
     mov pwm, #0 ; power variable
-    Send_Constant_String(#state0)
 
-    ;jb START_STOP, FSM_state0_done
-    ;jnb START_STOP, $   ; wait for key release
     jnb start_stop_flag, FSM_state0_done
     mov seconds, #0     ; set time to 0
     mov FSM_state, #1   ; set FSM_state to 1, next state is state1
@@ -542,7 +536,7 @@ FSM_state2:
     Send_Constant_String(#Soak_display)
     clr c   ; ! i don't know what is c 
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
-    subb a, sec    ; temp is our currect sec
+    subb a, seconds    ; temp is our currect sec
     jnc FSM_state2_done
     mov seconds, #0     ; set time to 0
     mov FSM_state, #3

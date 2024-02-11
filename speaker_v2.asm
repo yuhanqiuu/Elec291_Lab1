@@ -232,55 +232,23 @@ main:
 
 music_player:
     MOV note_counter, #0 ; Initialize note counter
-
-play_note:
-    MOV A, note_counter
-    CJNE A, melody_length, play_note_done ; Check if all notes have been played
-
-    MOV A, note_counter
-    MOV R0, A  ; Use R0 to index into the melody sequence
-    MOV A, melody_sequence[R0] ; Get the frequency of the current note
-    CALL PlayNote ; Call subroutine to play the note
-
-    ; Determine note length
-    MOV A, note_counter
-    JZ note_length_2_done
-    JNZ note_length_1_done
-
-note_length_1_done:
-    CALL Wait_Milli_Seconds(#note_length_1)
-    JMP play_note_done
-
-note_length_2_done:
-    CALL Wait_Milli_Seconds(#note_length_2)
-
-play_note_done:
-    INC note_counter ; Move to the next note
-    JMP music_player ; Repeat the process
-
-PlayNote:
-    CLR TR0 ; Stop Timer 0
-    MOV TH0, #HIGH(TIMER0_RELOAD) ; Set the reload value for Timer 0
-    MOV TL0, #LOW(TIMER0_RELOAD)
-    SETB TR0 ; Start Timer 0
-    RET
 play_b4_0:
-	cjne a, #0, play_a4_1
+	;cjne a, #0, play_a4_1
 	clr TR0
 	mov TH0, #high(TIMER0_RATE)
 	mov TL0, #low(TIMER0_RATE)
 	setb TR0
-	mov note_counter, #1
+	;mov note_counter, #1
 	Wait_Milli_Seconds(#250)
 play_b4_done:
 	ljmp music_player
 play_a4_1:
-	cjne a, #1, play_a4_1
+	;cjne a, #1, play_a4_1
 	clr TR0
 	mov TH0, #high(note_A_4)
 	mov TL0, #low(note_A_4)
 	setb TR0
-	mov note_counter, #0
+	;mov note_counter, #0
 	Wait_Milli_Seconds(#250)
 play_a4_done:
 	ljmp music_player

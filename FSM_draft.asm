@@ -15,7 +15,7 @@ $LIST
 ;                         VDD -|9    12|- P1.3/SCL/[STADC]
 ;            PWM5/IC7/SS/P1.5 -|10   11|- P1.4/SDA/FB/PWM1
 ;                               -------
-
+dseg
 reflow_time: ds 1 ; time parameter for reflow	
 reflow_temp: ds 1 ; temp parameter for reflow
 soak_time: ds 1 ; time parameter for soak
@@ -24,6 +24,7 @@ FSM_state: ds 1 ; state variable
 pwm: ds 1
 pwm_counter: ds 1
 
+bseg
 START_STOP: dbit 1
 SWTICH_MODE: dbit 1
 INCRE: dbit 1
