@@ -29,22 +29,30 @@ SWTICH_MODE: dbit 1
 INCRE: dbit 1
 DECRE: dbit 1
 
-state0: "state 0",0
-state1: "state 1",0
-state2: "state 2",0
-state3: "state 3",0
-state4: "state 4",0
-state5: "state 5",0
+state0: db 'state 0', 0
+state1: db 'state 1', 0
+state2: db 'state 2', 0
+state3: db 'state 3', 0
+state4: db 'state 4', 0
+state5: db 'state 5', 0
+
+To_Message:  db 'To=xxxC Tj= xxC', 0
+Time_temp_display:db 'sxxx,xx rxxx,xx', 0 ; soak temp,time reflow temp,time
 
 FSM:
     mov a, FSM_state
 FSM_state0:
     cjne a, #0, FSM_state1
     mov pwm, #0 ; power variable
-    Send_Constant_String(#state0)
+    Set_Cursor(1,1)
+    Send_Constant_String(#To_Message)
+    Set_Cursor(2,1)
+    Send_Constant_String(#Time_temp_display)
 
     ;jb START_STOP, FSM_state0_done
     ;jnb START_STOP, $   ; wait for key release
+    jnb start_stop_flag, FSM_state0_done
+    mov seconds, #0     ; set time to 0
     mov FSM_state, #1   ; set FSM_state to 1, next state is state1
 FSM_state0_done:
     ljmp FSM    ;jump back to FSM and reload FSM_state to a
@@ -52,10 +60,9 @@ FSM_state0_done:
 FSM_state1:
     cjne a, #1, FSM_state2
     mov pwm, #100
-    mov sec, #0     ; set time to 0
     Send_Constant_String(#state1)
     clr c
-    
+    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
     mov a, #0x60
     subb a, seconds
     jc abort
@@ -64,6 +71,7 @@ continue:
     mov a, soak_temp    ; set a to soak temp
     subb a, temp    ; temp is our currect temp
     jnc FSM_state1_done
+    mov seconds, #0     ; set time to 0
     mov FSM_state, #2
 FSM_state1_done:
     ljmp FSM
@@ -72,15 +80,22 @@ abort:
     subb a, temp
     jc continue     ; if temp is larger then 50 degree, go back to continue
     mov FSM_state, #0   ; abort the FSM
-    
+
+stop_state:
+    clr TR2
+    jb start_stop_flag, FSM
+    sjmp stop_state
+
 FSM_state2:
     cjne a, #2, FSM_state3
     mov pwm, #20
     mov a, soak_time    ; set a to soak time
     Send_Constant_String(#state2)
     clr c   ; ! i don't know what is c 
+    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
     subb a, sec    ; temp is our currect sec
     jnc FSM_state2_done
+    mov seconds, #0     ; set time to 0
     mov FSM_state, #3
 FSM_state2_done:
     ljmp FSM
@@ -88,12 +103,13 @@ FSM_state2_done:
 FSM_state3:
     cjne a, #3, FSM_state4
     mov pwm, #100
-    mov sec, #0     ; set time to 0
     mov a, reflow_temp    ; set a to reflow temp
     Send_Constant_String(#state3)
     clr c   ; ! i don't know what is c 
+    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
     subb a, temp    ; temp is our currect temp
     jnc FSM_state3_done
+    mov seconds, #0     ; set time to 0
     mov FSM_state, #4
 FSM_state3_done:
     ljmp FSM
@@ -104,8 +120,10 @@ FSM_state4:
     mov a, reflow_time    ; set a to reflow time
     Send_Constant_String(#state4)
     clr c   ; ! i don't know what is c 
-    subb a, sec    ; temp is our currect sec
+    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+    subb a, seconds    ; temp is our currect sec
     jnc FSM_state4_done
+    mov seconds, #0     ; set time to 0
     mov FSM_state, #5
 FSM_state4_done:
     ljmp FSM
@@ -113,12 +131,13 @@ FSM_state4_done:
 FSM_state5:
     cjne a, #5, FSM_state0
     mov pwm, #0
-    mov sec, #0     ; set time to 0
     mov a, #60    ; set a to 60
     Send_Constant_String(#state5)
-    clr c   ; ! i don't know what is c 
+    clr c   ; ! i don't know what is c
+    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
     subb temp, a    ; temp is our currect temp
     jnc FSM_state5_done
+    mov seconds, #0     ; set time to 0
     mov FSM_state, #0
 FSM_state5_done:
     ljmp FSM
