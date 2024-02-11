@@ -106,8 +106,8 @@ Timer0_Init:
 	anl a, #0xf0 ; 11110000 Clear the bits for timer 0
 	orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
 	mov TMOD, a
-	mov TH0, #high(TIMER0_RELOAD)
-	mov TL0, #low(TIMER0_RELOAD)
+	;mov TH0, #high(TIMER0_RATE)
+	;mov TL0, #low(TIMER0_RATE)
 	; Enable the timer and interrupts
     setb ET0  ; Enable timer 0 interrupt
     setb TR0  ; Start timer 0
@@ -115,15 +115,15 @@ Timer0_Init:
 
 ;---------------------------------;
 ; ISR for timer 0.  Set to execute;
-; every 1/4096Hz to generate a    ;
+; every 1/4096Hz to enerate a    ;
 ; 2048 Hz wave at pin SOUND_OUT   ;
 ;---------------------------------;
 Timer0_ISR:
 	;clr TF0  ; According to the data sheet this is done for us already.
 	; Timer 0 doesn't have 16-bit auto-reload, so
 	clr TR0
-	mov TH0, #high(TIMER0_RELOAD)
-	mov TL0, #low(TIMER0_RELOAD)
+	mov TH0, #high(note_A_4)
+	mov TL0, #low(note_A_4)
 	setb TR0
 	cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
 	reti
@@ -195,6 +195,7 @@ Timer2_ISR_done:
 	pop psw
 	pop acc
 	reti
+
 
 ;---------------------------------;
 ; Main program. Includes hardware ;
