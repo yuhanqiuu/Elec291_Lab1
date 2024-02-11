@@ -31,6 +31,8 @@ TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
 ;---------------------------------;
 ;!!!!!arbiturary value for now
 SOUND_OUT   equ p1.7 ; speaker pin
+; Output
+PWM_OUT    EQU P1.0 ; Logic 1=oven on
 ;---------------------------------------------
 ORG 0x0000
 	ljmp main
@@ -150,25 +152,27 @@ Timer2_Init:
 ; ISR for timer 2 ;
 ;---------------------------------;
 Timer2_ISR:
-clr TF2 ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR. It is
-bit addressable.
-push psw
-push acc
-inc pwm_counter
-clr c
-mov a, pwm
-subb a, pwm_counter ; If pwm_counter <= pwm then c=1
-cpl c
-mov PWM_OUT, c
-mov a, pwm_counter
-cjne a, #100, Timer2_ISR_done
-mov pwm_counter, #0
-inc seconds ; It is super easy to keep a seconds count here
-setb s_flag
+	clr TF2 ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR. It is bit addressable.
+	cpl P0.4 ; To check the interrupt rate with oscilloscope. It must be precisely a 1 ms pulse.
+		
+	; The two registers used in the ISR must be saved in the stack
+	push psw
+	push acc
+	inc pwm_counter
+	clr c
+	mov a, pwm
+	subb a, pwm_counter ; If pwm_counter <= pwm then c=1
+	cpl c
+	mov PWM_OUT, c
+	mov a, pwm_counter
+	cjne a, #100, Timer2_ISR_done
+	mov pwm_counter, #0
+	inc seconds ; It is super easy to keep a seconds count here
+	setb s_flag
 Timer2_ISR_done:
-pop acc
-pop psw
-reti
+	pop acc
+	pop psw
+	reti
 
 ;---------------------------------;
 ; Temperature senseor function    ;
@@ -464,10 +468,10 @@ main:
 	Set_Cursor(2, 1)
     Send_Constant_String(#Time_temp_display)
 	
-	mov Sec_counter, #0x00
-	mov soak_temp, #0x140
-	mov soak_time #0x60
-	mov reflow_temp, #0x230
+	mov seconds, #0x00
+	mov soak_temp, #0140 
+	mov soak_time, #0x60
+	mov reflow_temp, #0230
 	mov reflow_time, #0x30
 	setb TR2
     
