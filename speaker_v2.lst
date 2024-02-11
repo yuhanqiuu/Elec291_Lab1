@@ -105,8 +105,8 @@
 00F4 54F0       106            anl a, #0xf0 ; 11110000 Clear the bits for timer 0
 00F6 4401       107            orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
 00F8 F589       108            mov TMOD, a
-00FA 758C84     109            mov TH0, #high(TIMER0_RELOAD)
-00FD 758A05     110            mov TL0, #low(TIMER0_RELOAD)
+00FA 758C02     109            mov TH0, #high(TIMER0_RATE)
+00FD 758A0B     110            mov TL0, #low(TIMER0_RATE)
 0100            111            ; Enable the timer and interrupts
 0100 D2A9       112       setb ET0  ; Enable timer 0 interrupt
 0102 D28C       113       setb TR0  ; Start timer 0
@@ -114,15 +114,15 @@
 0105            115   
 0105            116   ;---------------------------------;
 0105            117   ; ISR for timer 0.  Set to execute;
-0105            118   ; every 1/4096Hz to generate a    ;
+0105            118   ; every 1/4096Hz to enerate a    ;
 0105            119   ; 2048 Hz wave at pin SOUND_OUT   ;
 0105            120   ;---------------------------------;
 0105            121   Timer0_ISR:
 0105            122            ;clr TF0  ; According to the data sheet this is done for us already.
 0105            123            ; Timer 0 doesn't have 16-bit auto-reload, so
 0105 C28C       124            clr TR0
-0107 758C84     125            mov TH0, #high(TIMER0_RELOAD)
-010A 758A05     126            mov TL0, #low(TIMER0_RELOAD)
+0107 758C03     125            mov TH0, #high(note_A_4)
+010A 758A70     126            mov TL0, #low(note_A_4)
 010D D28C       127            setb TR0
 010F B297       128            cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
 0111 32         129            reti
@@ -195,61 +195,62 @@
 015B D0E0       196            pop acc
 015D 32         197            reti
 015E            198   
-015E            199   ;---------------------------------;
-015E            200   ; Main program. Includes hardware ;
-015E            201   ; initialization and 'forever'    ;
-015E            202   ; loop.                           ;
-015E            203   ;---------------------------------;
-015E            204   main:
-015E            205            ; Initialization
-015E 75817F     206       mov SP, #0x7F
-0161 75B100     207       mov P0M1, #0x00
-0164 75B200     208       mov P0M2, #0x00
-0167 75B300     209       mov P1M1, #0x00
-016A 75B400     210       mov P1M2, #0x00
-016D 75AD00     211       mov P3M2, #0x00
-0170 75AD00     212       mov P3M2, #0x00
-0173            213             
-0173 1200EF     214       lcall Timer0_Init
-0176 120112     215       lcall Timer2_Init
-0179 D2AF       216       setb EA   ; Enable Global interrupts
-017B 120087     217       lcall LCD_4BIT
-017E            218       ; For convenience a few handy macros are included in 'LCD_4bit.inc':
-017E C0E0       219            push acc
-0180 7401       219            mov a, #1
-0182 14         219            dec a
-0183 1200C7     219            lcall ?Set_Cursor_1 ; Select column and row
-0186 D0E0       219            pop acc
-0188 C083       220            push dph
-018A C082       220            push dpl
-018C C0E0       220            push acc
-018E 9000E2     220            mov dptr, #Initial_Message
-0191 1200BA     220            lcall ?Send_Constant_String
-0194 D0E0       220            pop acc
-0196 D082       220            pop dpl
-0198 D083       220            pop dph
-019A D200       221       setb half_seconds_flag
-019C 753200     222            mov BCD_counter, #0x00
-019F            223            
-019F            224            ; After initialization the program stays in this 'forever' loop
-019F            225   loop:
-019F 209513     226            jb CLEAR_BUTTON, loop_a  ; if the 'CLEAR' button is not pressed skip
-01A2            227            ;Wait_Milli_Seconds(#50)        ; Debounce delay.  This macro is also in 'LCD_4bit.inc'
-01A2 209510     228            jb CLEAR_BUTTON, loop_a  ; if the 'CLEAR' button is not pressed skip
-01A5 3095FD     229            jnb CLEAR_BUTTON, $             ; Wait for button release.  The '$' means: jump to same instruction.
-01A8            230            ; A valid press of the 'CLEAR' button has been detected, reset the BCD counter.
-01A8            231            ; But first stop timer 2 and reset the milli-seconds counter, to resync everything.
-01A8 C2CA       232            clr TR2                 ; Stop timer 2
-01AA E4         233            clr a
-01AB F530       234            mov Count1ms+0, a
-01AD F531       235            mov Count1ms+1, a
-01AF            236            ; Now clear the BCD counter
-01AF F532       237            mov BCD_counter, a
-01B1 D2CA       238            setb TR2                ; Start timer 2
-01B3 8003       239            sjmp loop_b             ; Display the new value
-01B5            240   loop_a:
-01B5 3000E7     241            jnb half_seconds_flag, loop
-01B8            242   loop_b:
-01B8            243       ;clr half_seconds_flag ; We clear this flag in the main loop, but it is set in the ISR for timer 2
-01B8 02019F     244       ljmp loop
-01BB            245   END
+015E            199   
+015E            200   ;---------------------------------;
+015E            201   ; Main program. Includes hardware ;
+015E            202   ; initialization and 'forever'    ;
+015E            203   ; loop.                           ;
+015E            204   ;---------------------------------;
+015E            205   main:
+015E            206            ; Initialization
+015E 75817F     207       mov SP, #0x7F
+0161 75B100     208       mov P0M1, #0x00
+0164 75B200     209       mov P0M2, #0x00
+0167 75B300     210       mov P1M1, #0x00
+016A 75B400     211       mov P1M2, #0x00
+016D 75AD00     212       mov P3M2, #0x00
+0170 75AD00     213       mov P3M2, #0x00
+0173            214             
+0173 1200EF     215       lcall Timer0_Init
+0176 120112     216       lcall Timer2_Init
+0179 D2AF       217       setb EA   ; Enable Global interrupts
+017B 120087     218       lcall LCD_4BIT
+017E            219       ; For convenience a few handy macros are included in 'LCD_4bit.inc':
+017E C0E0       220            push acc
+0180 7401       220            mov a, #1
+0182 14         220            dec a
+0183 1200C7     220            lcall ?Set_Cursor_1 ; Select column and row
+0186 D0E0       220            pop acc
+0188 C083       221            push dph
+018A C082       221            push dpl
+018C C0E0       221            push acc
+018E 9000E2     221            mov dptr, #Initial_Message
+0191 1200BA     221            lcall ?Send_Constant_String
+0194 D0E0       221            pop acc
+0196 D082       221            pop dpl
+0198 D083       221            pop dph
+019A D200       222       setb half_seconds_flag
+019C 753200     223            mov BCD_counter, #0x00
+019F            224            
+019F            225            ; After initialization the program stays in this 'forever' loop
+019F            226   loop:
+019F 209513     227            jb CLEAR_BUTTON, loop_a  ; if the 'CLEAR' button is not pressed skip
+01A2            228            ;Wait_Milli_Seconds(#50)        ; Debounce delay.  This macro is also in 'LCD_4bit.inc'
+01A2 209510     229            jb CLEAR_BUTTON, loop_a  ; if the 'CLEAR' button is not pressed skip
+01A5 3095FD     230            jnb CLEAR_BUTTON, $             ; Wait for button release.  The '$' means: jump to same instruction.
+01A8            231            ; A valid press of the 'CLEAR' button has been detected, reset the BCD counter.
+01A8            232            ; But first stop timer 2 and reset the milli-seconds counter, to resync everything.
+01A8 C2CA       233            clr TR2                 ; Stop timer 2
+01AA E4         234            clr a
+01AB F530       235            mov Count1ms+0, a
+01AD F531       236            mov Count1ms+1, a
+01AF            237            ; Now clear the BCD counter
+01AF F532       238            mov BCD_counter, a
+01B1 D2CA       239            setb TR2                ; Start timer 2
+01B3 8003       240            sjmp loop_b             ; Display the new value
+01B5            241   loop_a:
+01B5 3000E7     242            jnb half_seconds_flag, loop
+01B8            243   loop_b:
+01B8            244       ;clr half_seconds_flag ; We clear this flag in the main loop, but it is set in the ISR for timer 2
+01B8 02019F     245       ljmp loop
+01BB            246   END
