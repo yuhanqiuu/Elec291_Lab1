@@ -44,6 +44,11 @@ note_C_4 equ 523
 note_length_1 equ 70
 note_length_2 equ 140
 ;----------------------------------
+;---------------------------------;
+; Melody of Turkish March         ;
+;---------------------------------;
+melody_sequence DB note_G_s_4, note_A_4, note_B_4, note_C_5, note_D_5, note_C_5, note_B_4, note_A_4
+melody_length DB 8 ; Number of notes in the melody
 
 CLEAR_BUTTON  equ P1.5
 UPDOWN        equ P1.6
@@ -132,8 +137,8 @@ Timer0_ISR:
 	;clr TF0  ; According to the data sheet this is done for us already.
 	; Timer 0 doesn't have 16-bit auto-reload, so
 	clr TR0
-	;mov TH0, #high(note_A_4)
-	;mov TL0, #low(note_A_4)
+	mov TH0, #high(note_A_4)
+	mov TL0, #low(note_A_4)
 	setb TR0
 	cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
 	reti
@@ -184,16 +189,15 @@ Inc_Done:
 	cjne a, #high(50), Timer2_ISR_done
 	
 	; 500 milliseconds have passed.  Set a flag so the main program knows
-	setb half_seconds_flag ; Let the main program know half second had passed
+	;setb half_seconds_flag ; Let the main program know half second had passed
 
-	cpl TR0 ; Enable/disable timer/counter 0. This line creates a beep-silence-beep-silence sound.
+	;cpl TR0 ; Enable/disable timer/counter 0. This line creates a beep-silence-beep-silence sound.
 	; Reset to zero the milli-seconds counter, it is a 16-bit variable
 
 	clr a
 	mov Count1ms+0, a
 	mov Count1ms+1, a
 	; Increment the BCD counter
-	
 
 Timer2_ISR_done:
 	pop psw
@@ -227,8 +231,39 @@ main:
 	mov BCD_counter, #0x00
 
 music_player:
-	setb ET0
-	mov a, note_counter
+    MOV note_counter, #0 ; Initialize note counter
+
+play_note:
+    MOV A, note_counter
+    CJNE A, melody_length, play_note_done ; Check if all notes have been played
+
+    MOV A, note_counter
+    MOV R0, A  ; Use R0 to index into the melody sequence
+    MOV A, melody_sequence[R0] ; Get the frequency of the current note
+    CALL PlayNote ; Call subroutine to play the note
+
+    ; Determine note length
+    MOV A, note_counter
+    JZ note_length_2_done
+    JNZ note_length_1_done
+
+note_length_1_done:
+    CALL Wait_Milli_Seconds(#note_length_1)
+    JMP play_note_done
+
+note_length_2_done:
+    CALL Wait_Milli_Seconds(#note_length_2)
+
+play_note_done:
+    INC note_counter ; Move to the next note
+    JMP music_player ; Repeat the process
+
+PlayNote:
+    CLR TR0 ; Stop Timer 0
+    MOV TH0, #HIGH(TIMER0_RELOAD) ; Set the reload value for Timer 0
+    MOV TL0, #LOW(TIMER0_RELOAD)
+    SETB TR0 ; Start Timer 0
+    RET
 play_b4_0:
 	cjne a, #0, play_a4_1
 	clr TR0
