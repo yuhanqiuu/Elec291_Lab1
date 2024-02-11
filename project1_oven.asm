@@ -29,7 +29,7 @@ TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
 ;---------------------------------;
 ; Define any buttons & pins here  ;
 ;---------------------------------;
-;!!!!!arbiturary value for now
+
 SOUND_OUT   equ p1.7 ; speaker pin
 ; Output
 PWM_OUT    EQU P1.0 ; Logic 1=oven on
