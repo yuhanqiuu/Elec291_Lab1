@@ -23,7 +23,7 @@ $LIST
 ;
 
 CLK           EQU 16600000 ; Microcontroller system frequency in Hz
-TIMER0_RATE   EQU 523     ; 2048Hz squarewave (peak amplitude of CEM-1203 speaker)
+TIMER0_RATE   EQU 4096     ; 2048Hz squarewave (peak amplitude of CEM-1203 speaker)
 TIMER0_RELOAD EQU ((65536-(CLK/TIMER0_RATE)))
 TIMER2_RATE   EQU 1000     ; 1000Hz, for a timer tick of 1ms
 TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
@@ -35,6 +35,14 @@ note_B_4 equ 988
 note_A_4 equ 880
 note_G_s_4 equ 831
 note_C_5 equ 1047
+note_C_4 equ 523
+;----------------------------------
+
+;---------------------------------;
+; Note Setting                    ;
+;---------------------------------;
+note_length_1 equ 70
+note_length_2 equ 140
 ;----------------------------------
 
 CLEAR_BUTTON  equ P1.5
@@ -73,7 +81,7 @@ org 0x002B
 dseg at 0x30
 Count1ms:     ds 2 ; Used to determine when half second has passed
 BCD_counter:  ds 1 ; The BCD counter incrememted in the ISR and displayed in the main loop
-
+note_counter: ds 1
 ; In the 8051 we have variables that are 1-bit in size.  We can use the setb, clr, jb, and jnb
 ; instructions with these variables.  This is how you define a 1-bit variable:
 bseg
@@ -109,7 +117,9 @@ Timer0_Init:
 	;mov TH0, #high(TIMER0_RATE)
 	;mov TL0, #low(TIMER0_RATE)
 	; Enable the timer and interrupts
-    setb ET0  ; Enable timer 0 interrupt
+
+    ;setb ET0  ; Enable timer 0 interrupt
+
     setb TR0  ; Start timer 0
 	ret
 
@@ -122,8 +132,8 @@ Timer0_ISR:
 	;clr TF0  ; According to the data sheet this is done for us already.
 	; Timer 0 doesn't have 16-bit auto-reload, so
 	clr TR0
-	mov TH0, #high(note_A_4)
-	mov TL0, #low(note_A_4)
+	;mov TH0, #high(note_A_4)
+	;mov TL0, #low(note_A_4)
 	setb TR0
 	cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
 	reti
@@ -184,13 +194,7 @@ Inc_Done:
 	mov Count1ms+1, a
 	; Increment the BCD counter
 	
-	sjmp Timer2_ISR_da
-Timer2_ISR_decrement:
-	add a, #0x99 ; Adding the 10-complement of -1 is like subtracting 1.
-Timer2_ISR_da:
-	da a ; Decimal adjust instruction.  Check datasheet for more details!
-	mov BCD_counter, a
-	
+
 Timer2_ISR_done:
 	pop psw
 	pop acc
@@ -221,26 +225,29 @@ main:
     Send_Constant_String(#Initial_Message)
     setb half_seconds_flag
 	mov BCD_counter, #0x00
-	
-	; After initialization the program stays in this 'forever' loop
-loop:
-	jb CLEAR_BUTTON, loop_a  ; if the 'CLEAR' button is not pressed skip
-	;Wait_Milli_Seconds(#50)	; Debounce delay.  This macro is also in 'LCD_4bit.inc'
-	jb CLEAR_BUTTON, loop_a  ; if the 'CLEAR' button is not pressed skip
-	jnb CLEAR_BUTTON, $		; Wait for button release.  The '$' means: jump to same instruction.
-	; A valid press of the 'CLEAR' button has been detected, reset the BCD counter.
-	; But first stop timer 2 and reset the milli-seconds counter, to resync everything.
-	clr TR2                 ; Stop timer 2
-	clr a
-	mov Count1ms+0, a
-	mov Count1ms+1, a
-	; Now clear the BCD counter
-	mov BCD_counter, a
-	setb TR2                ; Start timer 2
-	sjmp loop_b             ; Display the new value
-loop_a:
-	jnb half_seconds_flag, loop
-loop_b:
-    ;clr half_seconds_flag ; We clear this flag in the main loop, but it is set in the ISR for timer 2
-    ljmp loop
+
+music_player:
+	setb ET0
+	mov a, note_counter
+play_b4_0:
+	cjne a, #0, play_a4_1
+	clr TR0
+	mov TH0, #high(TIMER0_RATE)
+	mov TL0, #low(TIMER0_RATE)
+	setb TR0
+	mov note_counter, #1
+	Wait_Milli_Seconds(#250)
+play_b4_done:
+	ljmp music_player
+play_a4_1:
+	cjne a, #1, play_a4_1
+	clr TR0
+	mov TH0, #high(note_A_4)
+	mov TL0, #low(note_A_4)
+	setb TR0
+	mov note_counter, #0
+	Wait_Milli_Seconds(#250)
+play_a4_done:
+	ljmp music_player
+
 END
