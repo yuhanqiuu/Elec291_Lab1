@@ -30,11 +30,7 @@ TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
 ; Define any buttons & pins here  ;
 ;---------------------------------;
 ;!!!!!arbiturary value for now
-START_STOP  equ p1.3 ; start/stop button
-INCREMENT   equ p1.5 ; increment button
-DECREMENT   equ p1.6 ; decrement button
-SWITCH_MODE equ p1.7 ; switch stting mode: soak temp -> soak time -> reflow temp -> reflow time
-SOUND_OUT   equ p3.0 ; speaker pin
+SOUND_OUT   equ p1.7 ; speaker pin
 ;---------------------------------------------
 ORG 0x0000
 	ljmp main
@@ -84,6 +80,11 @@ pwm: ds 1 ; variable to count the power percentage
 BSEG
 mf: dbit 1
 s_flag: dbit 1 ; Set to one in the ISR every time 1000 ms had passed
+PB0: dbit 1 	; start/stop
+PB1: dbit 1 	; increment reflow time
+PB2: dbit 1 	; increment reflow temp
+PB3: dbit 1 	; increment soak time
+PB4: dbit 1 	; increment soak temp
 start_stop_flag: dbit 1 ; Set to one if button is pressed to start, press again to stop
 ;---------------------------------------------
 
