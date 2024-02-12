@@ -82,6 +82,7 @@ dseg at 0x30
 Count1ms:     ds 2 ; Used to determine when half second has passed
 BCD_counter:  ds 1 ; The BCD counter incrememted in the ISR and displayed in the main loop
 note_counter: ds 1
+timer_reload: ds 2
 ; In the 8051 we have variables that are 1-bit in size.  We can use the setb, clr, jb, and jnb
 ; instructions with these variables.  This is how you define a 1-bit variable:
 bseg
@@ -117,8 +118,8 @@ Timer0_Init:
 	mov TH0, #high(TIMER0_RATE)
 	mov TL0, #low(TIMER0_RATE)
 	; Enable the timer and interrupts
-
-    setb ET0  ; Enable timer 0 interrupt
+	setb ET0  ; Enable timer 0 interrupt
+    
     setb TR0  ; Start timer 0
 	ret
 
@@ -131,8 +132,8 @@ Timer0_ISR:
 	;clr TF0  ; According to the data sheet this is done for us already.
 	; Timer 0 doesn't have 16-bit auto-reload, so
 	clr TR0
-	mov TH0, #high(note_A_4)
-	mov TL0, #low(note_A_4)
+	mov TH0, timer_reload+1
+	mov TL0, timer_reload+0
 	setb TR0
 	cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
 	reti
@@ -205,6 +206,7 @@ Timer2_ISR_done:
 ; loop.                           ;
 ;---------------------------------;
 main:
+	
 	; Initialization
     mov SP, #0x7F
     mov P0M1, #0x00
@@ -222,29 +224,28 @@ main:
 	Set_Cursor(1, 1)
     Send_Constant_String(#Initial_Message)
     setb half_seconds_flag
-	mov BCD_counter, #0x00
 
-music_player:
-    MOV note_counter, #0 ; Initialize note counter
-play_b4_0:
-	;cjne a, #0, play_a4_1
-	clr TR0
-	mov TH0, #high(TIMER0_RATE)
-	mov TL0, #low(TIMER0_RATE)
-	setb TR0
-	;mov note_counter, #1
+start:
 	Wait_Milli_Seconds(#250)
-play_b4_done:
-	ljmp music_player
-play_a4_1:
-	;cjne a, #1, play_a4_1
-	clr TR0
-	mov TH0, #high(note_A_4)
-	mov TL0, #low(note_A_4)
-	setb TR0
-	;mov note_counter, #0
+	mov timer_reload+1, #high(note_B_4)
+	mov timer_reload+0, #low(note_B_4)
+play_music1:
 	Wait_Milli_Seconds(#250)
-play_a4_done:
-	ljmp music_player
+	mov timer_reload+1, #high(note_A_4)
+	mov timer_reload+0, #low(note_A_4)
+play_music2:
+	Wait_Milli_Seconds(#250)
+	mov timer_reload+1, #high(note_G_s_4)
+	mov timer_reload+0, #low(note_G_s_4)
+play_music3:
+	Wait_Milli_Seconds(#250)
+	mov timer_reload+1, #high(note_A_4)
+	mov timer_reload+0, #low(note_A_4)
+play_music4:
+	Wait_Milli_Seconds(#250)
+	mov timer_reload+1, #high(note_C_5)
+	mov timer_reload+0, #low(note_C_5)
+	ljmp start
+
 
 END
