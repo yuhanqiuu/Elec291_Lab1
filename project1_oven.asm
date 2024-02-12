@@ -371,18 +371,13 @@ endmac
 ; We can display a number any way we want.  In this case with
 ; four decimal places.
 Display_formated_BCD:
-	Set_Cursor(2, 5)
+	Set_Cursor(1, 4) ; display To
 	Display_BCD(bcd+4)
 	Display_BCD(bcd+3) ;this is just in case temperatures exceed 100C and we're in deg F
 	Display_BCD(bcd+2)
-	Display_char(#'.')
-	Display_BCD(bcd+1)
-	Display_BCD(bcd+0)
-	Set_Cursor(1, 13)
-	Send_Constant_String(#celcius)
-	sjmp printcel
 
-printcel:
+	Set_Cursor(1, 13)
+	Send_Constant_String(#22) ; display Tj=22
 	ret
 
 
