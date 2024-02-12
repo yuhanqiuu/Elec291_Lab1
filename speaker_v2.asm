@@ -44,11 +44,6 @@ note_C_4 equ 523
 note_length_1 equ 70
 note_length_2 equ 140
 ;----------------------------------
-;---------------------------------;
-; Melody of Turkish March         ;
-;---------------------------------;
-melody_sequence DB note_G_s_4, note_A_4, note_B_4, note_C_5, note_D_5, note_C_5, note_B_4, note_A_4
-melody_length DB 8 ; Number of notes in the melody
 
 CLEAR_BUTTON  equ P1.5
 UPDOWN        equ P1.6
@@ -119,12 +114,11 @@ Timer0_Init:
 	anl a, #0xf0 ; 11110000 Clear the bits for timer 0
 	orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
 	mov TMOD, a
-	;mov TH0, #high(TIMER0_RATE)
-	;mov TL0, #low(TIMER0_RATE)
+	mov TH0, #high(TIMER0_RATE)
+	mov TL0, #low(TIMER0_RATE)
 	; Enable the timer and interrupts
 
-    ;setb ET0  ; Enable timer 0 interrupt
-
+    setb ET0  ; Enable timer 0 interrupt
     setb TR0  ; Start timer 0
 	ret
 

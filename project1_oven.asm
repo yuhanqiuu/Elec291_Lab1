@@ -156,7 +156,7 @@ Timer2_Init:
 	ret
 
 ;---------------------------------;
-; ISR for timer 2 ;
+; ISR for timer 2                 ;
 ;---------------------------------;
 Timer2_ISR:
 	clr TF2 ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR. It is bit addressable.
@@ -525,7 +525,11 @@ abort:
 
 stop_state:
     clr TR2
-    jb start_stop_flag, FSM
+    jnb start_stop_flag, stop
+	setb TR2
+	ljmp FSM
+
+stop:
     sjmp stop_state
 
 FSM_state2:
@@ -557,6 +561,12 @@ FSM_state3:
     mov FSM_state, #4
 FSM_state3_done:
     ljmp FSM
+	
+intermediate_state_0:
+	ljmp FSM_state0
+
+intermediate_stop_jump:
+	ljmp stop_state
 
 FSM_state4:
     cjne a, #4, FSM_state5
@@ -565,7 +575,7 @@ FSM_state4:
     Set_Cursor(2, 1)
     Send_Constant_String(#Reflow_display)
     clr c   ; ! i don't know what is c 
-    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+    jnb start_stop_flag, intermediate_stop_jump; checks the flag if 0, then means stop was pressed, if 1 keep on going
     subb a, seconds    ; temp is our currect sec
     jnc FSM_state4_done
     mov seconds, #0     ; set time to 0
@@ -574,13 +584,13 @@ FSM_state4_done:
     ljmp FSM
 
 FSM_state5:
-    cjne a, #5, FSM_state0
+    cjne a, #5, intermediate_state_0
     mov pwm, #0
     mov a, #60    ; set a to 60
     Set_Cursor(2, 1)
     Send_Constant_String(#Cooling_display)
     clr c   ; ! i don't know what is c
-    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
+    jnb start_stop_flag, intermediate_stop_jump ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
     subb a, temp    ; temp is our currect temp, need to be edit
     jnc FSM_state5_done
     mov seconds, #0     ; set time to 0
