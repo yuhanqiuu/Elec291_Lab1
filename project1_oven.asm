@@ -509,6 +509,7 @@ FSM_state1:
 continue:
     clr c   ; ! i don't know what is c
     mov a, soak_temp    ; set a to soak temp
+	mov temp, bcd
     subb a, temp    ; temp is our currect temp
     jnc FSM_state1_done
     mov seconds, #0     ; set time to 0
@@ -517,6 +518,7 @@ FSM_state1_done:
     ljmp FSM
 abort:
     mov a, #50  ; set a to 50 degree
+	mov temp, bcd
     subb a, temp
     jc continue     ; if temp is larger then 50 degree, go back to continue
     mov FSM_state, #0   ; abort the FSM
@@ -553,6 +555,7 @@ FSM_state3:
     Send_Constant_String(#Ramp_to_peak)
     clr c   ; ! i don't know what is c 
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+	mov temp, bcd
     subb a, temp    ; temp is our currect temp
     jnc FSM_state3_done
     mov seconds, #0     ; set time to 0
@@ -589,7 +592,8 @@ FSM_state5:
     Send_Constant_String(#Cooling_display)
     clr c   ; ! i don't know what is c
     jnb start_stop_flag, intermediate_stop_jump ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
-    subb a, temp    ; temp is our currect temp, need to be edit
+    mov temp, bcd
+	subb a, temp    ; temp is our currect temp, need to be edit
     jnc FSM_state5_done
     mov seconds, #0     ; set time to 0
     mov FSM_state, #0

@@ -599,7 +599,7 @@
 0697 020686     497       ljmp FSM    ;jump back to FSM and reload FSM_state to a
 069A            498   
 069A            499   FSM_state1:
-069A B4014E     500       cjne a, #1, FSM_state2
+069A B40154     500       cjne a, #1, FSM_state2
 069D 754764     501       mov pwm, #100
 06A0 C0E0       502            push acc
 06A2 7401       502            mov a, #1
@@ -615,141 +615,145 @@
 06B8 D082       503            pop dpl
 06BA D083       503            pop dph
 06BC C3         504       clr c
-06BD 30071F     505       jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+06BD 300725     505       jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
 06C0 7460       506       mov a, #0x60
 06C2 953F       507       subb a, seconds
-06C4 4010       508       jc abort
+06C4 4013       508       jc abort
 06C6            509   continue:
 06C6 C3         510       clr c   ; ! i don't know what is c
 06C7 E545       511       mov a, soak_temp    ; set a to soak temp
-06C9 9548       512       subb a, temp    ; temp is our currect temp
-06CB 5006       513       jnc FSM_state1_done
-06CD 753F00     514       mov seconds, #0     ; set time to 0
-06D0 754B02     515       mov FSM_state, #2
-06D3            516   FSM_state1_done:
-06D3 020686     517       ljmp FSM
-06D6            518   abort:
-06D6 7432       519       mov a, #50  ; set a to 50 degree
-06D8 9548       520       subb a, temp
-06DA 40EA       521       jc continue     ; if temp is larger then 50 degree, go back to continue
-06DC 754B00     522       mov FSM_state, #0   ; abort the FSM
-06DF            523   
-06DF            524   stop_state:
-06DF C2CA       525       clr TR2
-06E1 300705     526       jnb start_stop_flag, stop
-06E4 D2CA       527            setb TR2
-06E6 020686     528            ljmp FSM
-06E9            529   
-06E9            530   stop:
-06E9 80F4       531       sjmp stop_state
-06EB            532   
-06EB            533   FSM_state2:
-06EB B40232     534       cjne a, #2, FSM_state3
-06EE 754714     535       mov pwm, #20
-06F1 E544       536       mov a, soak_time    ; set a to soak time
-06F3 C0E0       537            push acc
-06F5 7401       537            mov a, #1
-06F7 14         537            dec a
-06F8 12010B     537            lcall ?Set_Cursor_2 ; Select column and row
-06FB D0E0       537            pop acc
-06FD C083       538            push dph
-06FF C082       538            push dpl
-0701 C0E0       538            push acc
-0703 900036     538            mov dptr, #Soak_display
-0706 120100     538            lcall ?Send_Constant_String
-0709 D0E0       538            pop acc
-070B D082       538            pop dpl
-070D D083       538            pop dph
-070F C3         539       clr c   ; ! i don't know what is c 
-0710 3007CC     540       jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
-0713 953F       541       subb a, seconds    ; temp is our currect sec
-0715 5006       542       jnc FSM_state2_done
-0717 753F00     543       mov seconds, #0     ; set time to 0
-071A 754B03     544       mov FSM_state, #3
-071D            545   FSM_state2_done:
-071D 020686     546       ljmp FSM
-0720            547   
-0720            548   FSM_state3:
-0720 B40338     549       cjne a, #3, FSM_state4
-0723 754764     550       mov pwm, #100
-0726 E543       551       mov a, reflow_temp    ; set a to reflow temp
-0728 C0E0       552            push acc
-072A 7401       552            mov a, #1
-072C 14         552            dec a
-072D 12010B     552            lcall ?Set_Cursor_2 ; Select column and row
-0730 D0E0       552            pop acc
-0732 C083       553            push dph
-0734 C082       553            push dpl
-0736 C0E0       553            push acc
-0738 900044     553            mov dptr, #Ramp_to_peak
-073B 120100     553            lcall ?Send_Constant_String
-073E D0E0       553            pop acc
-0740 D082       553            pop dpl
-0742 D083       553            pop dph
-0744 C3         554       clr c   ; ! i don't know what is c 
-0745 300797     555       jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
-0748 9548       556       subb a, temp    ; temp is our currect temp
-074A 5006       557       jnc FSM_state3_done
-074C 753F00     558       mov seconds, #0     ; set time to 0
-074F 754B04     559       mov FSM_state, #4
-0752            560   FSM_state3_done:
-0752 020686     561       ljmp FSM
-0755            562            
-0755            563   intermediate_state_0:
-0755 020688     564            ljmp FSM_state0
-0758            565   
-0758            566   intermediate_stop_jump:
-0758 0206DF     567            ljmp stop_state
-075B            568   
-075B            569   FSM_state4:
-075B B40432     570       cjne a, #4, FSM_state5
-075E 754714     571       mov pwm, #20
-0761 E542       572       mov a, reflow_time    ; set a to reflow time
-0763 C0E0       573            push acc
-0765 7401       573            mov a, #1
-0767 14         573            dec a
-0768 12010B     573            lcall ?Set_Cursor_2 ; Select column and row
-076B D0E0       573            pop acc
-076D C083       574            push dph
-076F C082       574            push dpl
-0771 C0E0       574            push acc
-0773 900055     574            mov dptr, #Reflow_display
-0776 120100     574            lcall ?Send_Constant_String
-0779 D0E0       574            pop acc
-077B D082       574            pop dpl
-077D D083       574            pop dph
-077F C3         575       clr c   ; ! i don't know what is c 
-0780 3007D5     576       jnb start_stop_flag, intermediate_stop_jump; checks the flag if 0, then means stop was pressed, if 1 keep on going
-0783 953F       577       subb a, seconds    ; temp is our currect sec
-0785 5006       578       jnc FSM_state4_done
-0787 753F00     579       mov seconds, #0     ; set time to 0
-078A 754B05     580       mov FSM_state, #5
-078D            581   FSM_state4_done:
-078D 020686     582       ljmp FSM
-0790            583   
-0790            584   FSM_state5:
-0790 B405C2     585       cjne a, #5, intermediate_state_0
-0793 754700     586       mov pwm, #0
-0796 743C       587       mov a, #60    ; set a to 60
-0798 C0E0       588            push acc
-079A 7401       588            mov a, #1
-079C 14         588            dec a
-079D 12010B     588            lcall ?Set_Cursor_2 ; Select column and row
-07A0 D0E0       588            pop acc
-07A2 C083       589            push dph
-07A4 C082       589            push dpl
-07A6 C0E0       589            push acc
-07A8 900064     589            mov dptr, #Cooling_display
-07AB 120100     589            lcall ?Send_Constant_String
-07AE D0E0       589            pop acc
-07B0 D082       589            pop dpl
-07B2 D083       589            pop dph
-07B4 C3         590       clr c   ; ! i don't know what is c
-07B5 3007A0     591       jnb start_stop_flag, intermediate_stop_jump ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
-07B8 9548       592       subb a, temp    ; temp is our currect temp, need to be edit
-07BA 5006       593       jnc FSM_state5_done
-07BC 753F00     594       mov seconds, #0     ; set time to 0
-07BF 754B00     595       mov FSM_state, #0
-07C2            596   FSM_state5_done:
-07C2 020686     597       ljmp FSM
-07C5            598   EN
+06C9 853848     512            mov temp, bcd
+06CC 9548       513       subb a, temp    ; temp is our currect temp
+06CE 5006       514       jnc FSM_state1_done
+06D0 753F00     515       mov seconds, #0     ; set time to 0
+06D3 754B02     516       mov FSM_state, #2
+06D6            517   FSM_state1_done:
+06D6 020686     518       ljmp FSM
+06D9            519   abort:
+06D9 7432       520       mov a, #50  ; set a to 50 degree
+06DB 853848     521            mov temp, bcd
+06DE 9548       522       subb a, temp
+06E0 40E4       523       jc continue     ; if temp is larger then 50 degree, go back to continue
+06E2 754B00     524       mov FSM_state, #0   ; abort the FSM
+06E5            525   
+06E5            526   stop_state:
+06E5 C2CA       527       clr TR2
+06E7 300705     528       jnb start_stop_flag, stop
+06EA D2CA       529            setb TR2
+06EC 020686     530            ljmp FSM
+06EF            531   
+06EF            532   stop:
+06EF 80F4       533       sjmp stop_state
+06F1            534   
+06F1            535   FSM_state2:
+06F1 B40232     536       cjne a, #2, FSM_state3
+06F4 754714     537       mov pwm, #20
+06F7 E544       538       mov a, soak_time    ; set a to soak time
+06F9 C0E0       539            push acc
+06FB 7401       539            mov a, #1
+06FD 14         539            dec a
+06FE 12010B     539            lcall ?Set_Cursor_2 ; Select column and row
+0701 D0E0       539            pop acc
+0703 C083       540            push dph
+0705 C082       540            push dpl
+0707 C0E0       540            push acc
+0709 900036     540            mov dptr, #Soak_display
+070C 120100     540            lcall ?Send_Constant_String
+070F D0E0       540            pop acc
+0711 D082       540            pop dpl
+0713 D083       540            pop dph
+0715 C3         541       clr c   ; ! i don't know what is c 
+0716 3007CC     542       jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+0719 953F       543       subb a, seconds    ; temp is our currect sec
+071B 5006       544       jnc FSM_state2_done
+071D 753F00     545       mov seconds, #0     ; set time to 0
+0720 754B03     546       mov FSM_state, #3
+0723            547   FSM_state2_done:
+0723 020686     548       ljmp FSM
+0726            549   
+0726            550   FSM_state3:
+0726 B4033B     551       cjne a, #3, FSM_state4
+0729 754764     552       mov pwm, #100
+072C E543       553       mov a, reflow_temp    ; set a to reflow temp
+072E C0E0       554            push acc
+0730 7401       554            mov a, #1
+0732 14         554            dec a
+0733 12010B     554            lcall ?Set_Cursor_2 ; Select column and row
+0736 D0E0       554            pop acc
+0738 C083       555            push dph
+073A C082       555            push dpl
+073C C0E0       555            push acc
+073E 900044     555            mov dptr, #Ramp_to_peak
+0741 120100     555            lcall ?Send_Constant_String
+0744 D0E0       555            pop acc
+0746 D082       555            pop dpl
+0748 D083       555            pop dph
+074A C3         556       clr c   ; ! i don't know what is c 
+074B 300797     557       jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+074E 853848     558            mov temp, bcd
+0751 9548       559       subb a, temp    ; temp is our currect temp
+0753 5006       560       jnc FSM_state3_done
+0755 753F00     561       mov seconds, #0     ; set time to 0
+0758 754B04     562       mov FSM_state, #4
+075B            563   FSM_state3_done:
+075B 020686     564       ljmp FSM
+075E            565            
+075E            566   intermediate_state_0:
+075E 020688     567            ljmp FSM_state0
+0761            568   
+0761            569   intermediate_stop_jump:
+0761 0206E5     570            ljmp stop_state
+0764            571   
+0764            572   FSM_state4:
+0764 B40432     573       cjne a, #4, FSM_state5
+0767 754714     574       mov pwm, #20
+076A E542       575       mov a, reflow_time    ; set a to reflow time
+076C C0E0       576            push acc
+076E 7401       576            mov a, #1
+0770 14         576            dec a
+0771 12010B     576            lcall ?Set_Cursor_2 ; Select column and row
+0774 D0E0       576            pop acc
+0776 C083       577            push dph
+0778 C082       577            push dpl
+077A C0E0       577            push acc
+077C 900055     577            mov dptr, #Reflow_display
+077F 120100     577            lcall ?Send_Constant_String
+0782 D0E0       577            pop acc
+0784 D082       577            pop dpl
+0786 D083       577            pop dph
+0788 C3         578       clr c   ; ! i don't know what is c 
+0789 3007D5     579       jnb start_stop_flag, intermediate_stop_jump; checks the flag if 0, then means stop was pressed, if 1 keep on going
+078C 953F       580       subb a, seconds    ; temp is our currect sec
+078E 5006       581       jnc FSM_state4_done
+0790 753F00     582       mov seconds, #0     ; set time to 0
+0793 754B05     583       mov FSM_state, #5
+0796            584   FSM_state4_done:
+0796 020686     585       ljmp FSM
+0799            586   
+0799            587   FSM_state5:
+0799 B405C2     588       cjne a, #5, intermediate_state_0
+079C 754700     589       mov pwm, #0
+079F 743C       590       mov a, #60    ; set a to 60
+07A1 C0E0       591            push acc
+07A3 7401       591            mov a, #1
+07A5 14         591            dec a
+07A6 12010B     591            lcall ?Set_Cursor_2 ; Select column and row
+07A9 D0E0       591            pop acc
+07AB C083       592            push dph
+07AD C082       592            push dpl
+07AF C0E0       592            push acc
+07B1 900064     592            mov dptr, #Cooling_display
+07B4 120100     592            lcall ?Send_Constant_String
+07B7 D0E0       592            pop acc
+07B9 D082       592            pop dpl
+07BB D083       592            pop dph
+07BD C3         593       clr c   ; ! i don't know what is c
+07BE 3007A0     594       jnb start_stop_flag, intermediate_stop_jump ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
+07C1 853848     595       mov temp, bcd
+07C4 9548       596            subb a, temp    ; temp is our currect temp, need to be edit
+07C6 5006       597       jnc FSM_state5_done
+07C8 753F00     598       mov seconds, #0     ; set time to 0
+07CB 754B00     599       mov FSM_state, #0
+07CE            600   FSM_state5_done:
+07CE 020686     601       ljmp FSM
+07D1            602   EN
