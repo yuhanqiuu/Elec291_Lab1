@@ -45,13 +45,7 @@ FSM:
 FSM_state0:
     cjne a, #0, FSM_state1
     mov pwm, #0 ; power variable
-    Set_Cursor(1,1)
-    Send_Constant_String(#To_Message)
-    Set_Cursor(2,1)
-    Send_Constant_String(#Time_temp_display)
 
-    ;jb START_STOP, FSM_state0_done
-    ;jnb START_STOP, $   ; wait for key release
     jnb start_stop_flag, FSM_state0_done
     mov seconds, #0     ; set time to 0
     mov FSM_state, #1   ; set FSM_state to 1, next state is state1
@@ -61,7 +55,8 @@ FSM_state0_done:
 FSM_state1:
     cjne a, #1, FSM_state2
     mov pwm, #100
-    Send_Constant_String(#state1)
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Ramp_to_soak)
     clr c
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
     mov a, #0x60
@@ -84,17 +79,22 @@ abort:
 
 stop_state:
     clr TR2
-    jb start_stop_flag, FSM
+    jnb start_stop_flag, stop
+	setb TR2
+	ljmp FSM
+
+stop:
     sjmp stop_state
 
 FSM_state2:
     cjne a, #2, FSM_state3
     mov pwm, #20
     mov a, soak_time    ; set a to soak time
-    Send_Constant_String(#state2)
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Soak_display)
     clr c   ; ! i don't know what is c 
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
-    subb a, sec    ; temp is our currect sec
+    subb a, seconds    ; temp is our currect sec
     jnc FSM_state2_done
     mov seconds, #0     ; set time to 0
     mov FSM_state, #3
@@ -105,7 +105,8 @@ FSM_state3:
     cjne a, #3, FSM_state4
     mov pwm, #100
     mov a, reflow_temp    ; set a to reflow temp
-    Send_Constant_String(#state3)
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Ramp_to_peak)
     clr c   ; ! i don't know what is c 
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
     subb a, temp    ; temp is our currect temp
@@ -114,14 +115,21 @@ FSM_state3:
     mov FSM_state, #4
 FSM_state3_done:
     ljmp FSM
+	
+intermediate_state_0:
+	ljmp FSM_state0
+
+intermediate_stop_jump:
+	ljmp stop_state
 
 FSM_state4:
     cjne a, #4, FSM_state5
     mov pwm, #20
     mov a, reflow_time    ; set a to reflow time
-    Send_Constant_String(#state4)
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Reflow_display)
     clr c   ; ! i don't know what is c 
-    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+    jnb start_stop_flag, intermediate_stop_jump; checks the flag if 0, then means stop was pressed, if 1 keep on going
     subb a, seconds    ; temp is our currect sec
     jnc FSM_state4_done
     mov seconds, #0     ; set time to 0
@@ -130,16 +138,16 @@ FSM_state4_done:
     ljmp FSM
 
 FSM_state5:
-    cjne a, #5, FSM_state0
+    cjne a, #5, intermediate_state_0
     mov pwm, #0
     mov a, #60    ; set a to 60
-    Send_Constant_String(#state5)
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Cooling_display)
     clr c   ; ! i don't know what is c
-    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
-    subb temp, a    ; temp is our currect temp
+    jnb start_stop_flag, intermediate_stop_jump ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
+    subb a, temp    ; temp is our currect temp, need to be edit
     jnc FSM_state5_done
     mov seconds, #0     ; set time to 0
     mov FSM_state, #0
 FSM_state5_done:
     ljmp FSM
-
