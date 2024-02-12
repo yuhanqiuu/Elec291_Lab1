@@ -48,8 +48,6 @@ Soak_display: 	  db 'Soak 		 s=xxx', 0 ; state 2 display
 Ramp_to_peak: 	  db 'RampToPeak s=xxx', 0 ; state 3 display
 Reflow_display:   db 'Reflow 	 s=xxx', 0 ; state 4 display
 Cooling_display:  db 'Cooling 	 s=xxx', 0 ; state 5 display
-celcius: 		  db 'C', 0
-fahren: 		  db 'F', 0
 ;---------------------------------------------
 cseg
 
