@@ -29,7 +29,7 @@ TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
 ;---------------------------------;
 ; Define any buttons & pins here  ;
 ;---------------------------------;
-
+;!!!!!arbiturary value for now
 SOUND_OUT   equ p1.7 ; speaker pin
 ; Output
 PWM_OUT    EQU P1.0 ; Logic 1=oven on
@@ -156,7 +156,7 @@ Timer2_Init:
 	ret
 
 ;---------------------------------;
-; ISR for timer 2                 ;
+; ISR for timer 2 ;
 ;---------------------------------;
 Timer2_ISR:
 	clr TF2 ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR. It is bit addressable.
@@ -371,24 +371,25 @@ endmac
 ; We can display a number any way we want.  In this case with
 ; four decimal places.
 Display_formated_BCD:
-	Set_Cursor(1, 3)
+	Set_Cursor(1, 4) ; display To
+	Display_BCD(bcd+4)
+	Display_BCD(bcd+3) ;this is just in case temperatures exceed 100C and we're in deg F
 	Display_BCD(bcd+2)
-	Display_char(#'.')
-	Display_BCD(bcd+1)
-	Display_BCD(bcd+0)
-	Set_Cursor(2, 10)
-	;Display_char(#'=')
+
+	Set_Cursor(1, 13)
+	Send_Constant_String(#22) ; display Tj=22
 	ret
 
-Read_ADC:
+
+;-------------------------------------------------;
+; Display all values and temperatures to the LCD  ;
+;-------------------------------------------------;
+Display_Data:
 	clr ADCF
 	setb ADCS ;  ADC start trigger signal
     jnb ADCF, $ ; Wait for conversion complete
     
     ; Read the ADC result and store in [R1, R0]
-    mov a, ADCRL
-    anl a, #0x0f
-    mov R0, a
     mov a, ADCRH   
     swap a
     push acc
@@ -396,27 +397,8 @@ Read_ADC:
     mov R1, a
     pop acc
     anl a, #0xf0
-    orl a, R0
+    orl a, ADCRL
     mov R0, A
-	ret
-
-;-------------------------------------------------;
-; Display all values and temperatures to the LCD  ;
-;-------------------------------------------------;
-Display_Data:
-	; Read the 2.08V LED voltage connected to AIN0 on pin 6
-	anl ADCCON0, #0xF0
-	orl ADCCON0, #0x00 ; Select channel 0
-
-	lcall Read_ADC
-	; Save result for later use
-	mov VLED_ADC+0, R0
-	mov VLED_ADC+1, R1
-
-	; Read the signal connected to AIN7
-	anl ADCCON0, #0xF0
-	orl ADCCON0, #0x07 ; Select channel 7
-	lcall Read_ADC
     
     ; Convert to voltage
 	mov x+0, R0
@@ -424,43 +406,59 @@ Display_Data:
 	; Pad other bits with zero
 	mov x+2, #0
 	mov x+3, #0
-	Load_y(20740) ; The MEASURED LED voltage: 2.074V, with 4 decimal places
-	lcall mul32 ; Get ADC * V_ref
-	; Retrive the ADC LED value
-	mov y+0, VLED_ADC+0
-	mov y+1, VLED_ADC+1
-	; Pad other bits with zero
-	mov y+2, #0
-	mov y+3, #0
-	lcall div32 ; Get V_out
-	; Calculate Temp based on V_out
-	Load_y(27300) ; The reference temp K
-	lcall sub32 ; Get Temp*0.01
-	; Change Temp*0.01 to Temp
-	Load_y(100)
-	lcall mul32
+	
+	;lcall div32 ; Get V_out
+	; ; Calculate Temp based on V_out
+	; Load_y(27300) ; The reference temp K
+	; lcall sub32 ; Get Temp*0.01
+	; ; Change Temp*0.01 to Temp
+	; Load_y(100)
+	; lcall mul32
 
-	; Convert to BCD and display
+	Load_y(50300) ; VCC voltage measured (equals 4.99V)
+	lcall mul32 ;multiplying ADC * Vref
+	Load_y(4095) ; 2^12-1
+	lcall div32 ;now doing (ADC*Vref)/(4095)
+	
+	Load_y(1000) ; for converting volt to microvolt
+	lcall mul32 ;multiplying volts
+	
+	Load_y(10)
+	lcall mul32
+	
+	;convert to temperature
+	Load_y(23500) ;divide by the gain 
+	lcall div32 
+	Load_Y(41);load y = 41
+	lcall div32 ;divide by 41
+	
+	Load_y(10000)
+	lcall mul32
+	
+	Load_Y(220000) ;cold junction 19 deg C
+	lcall add32
+
+; Convert to BCD and display
+celc:
 	lcall hex2bcd
 	lcall Display_formated_BCD
-	Send_BCD(bcd+3)
-	Send_BCD(bcd+2)
-	Send_BCD(bcd+1)
 	
-	mov a, #'\r' ; Return character
+	;send the BCD value to the MATLAB script
+	send_BCD(bcd+3)
+	send_BCD(bcd+2)
+	send_BCD(bcd+1)
+	send_BCD(bcd)
+	mov a, #'\r'
 	lcall putchar
-	mov a, #'\n' ; New-line character
+	mov a, #'\n'
 	lcall putchar
-
-	Set_Cursor(2,3)	; Display the amount of seconds that has passed from timer2
-	Display_BCD(#seconds)
 	
 	; Wait 500 ms between conversions
 	mov R2, #250
 	lcall waitms
 	mov R2, #250
 	lcall waitms
-	
+
 	reti
 
 main:
@@ -597,5 +595,4 @@ FSM_state5:
     mov FSM_state, #0
 FSM_state5_done:
     ljmp FSM
-
 END
