@@ -1,5 +1,4 @@
 ; 76E003 ADC test program: Reads channel 7 on P1.1, pin 14
-; This version uses an LED as voltage reference connected to pin 6 (P1.7/AIN0)
 
 $NOLIST
 $MODN76E003
@@ -18,24 +17,27 @@ $LIST
 ;                         VDD -|9    12|- P1.3/SCL/[STADC]
 ;            PWM5/IC7/SS/P1.5 -|10   11|- P1.4/SDA/FB/PWM1
 ;                               -------
-;
+;t
 
 CLK               EQU 16600000 ; Microcontroller system frequency in Hz
 BAUD              EQU 115200 ; Baud rate of UART in bps
 TIMER1_RELOAD     EQU (0x100-(CLK/(16*BAUD)))
 TIMER0_RELOAD_1MS EQU (0x10000-(CLK/1000))
 
-SOUND_OUT     equ P1.7 	;connected to speaker
+CtoF      		  equ P1.5
 
 ORG 0x0000
 	ljmp main
 
 ;                     1234567890123456    <- This helps determine the location of the counter
-test_message:     db '*** ADC TEST ***', 0
-value_message:    db 'Temp=      ', 0
+test_message:     db '* Temp (deg x) *', 0
+value_message:    db 'T =      ', 0
+celcius: 		  db 'C', 0
+fahren: 		  db 'F', 0
 cseg
 ; These 'equ' must match the hardware wiring
 LCD_RS equ P1.3
+;LCD_RW equ PX.X ; Not used in this code, connect the pin to GND
 LCD_E  equ P1.4
 LCD_D4 equ P0.0
 LCD_D5 equ P0.1
@@ -51,14 +53,15 @@ DSEG at 30H
 x:   ds 4
 y:   ds 4
 bcd: ds 5
-VLED_ADC: ds 2
 
 BSEG
 mf: dbit 1
+deg: dbit 1 ;deg flag set to 1 for celcius, 0 for fahrenheit
 
 $NOLIST
 $include(math32.inc)
 $LIST
+
 
 Init_All:
 	; Configure all the pins for biderectional I/O
@@ -84,27 +87,20 @@ Init_All:
 	anl	TMOD,#0xF0 ; Clear the configuration bits for timer 0
 	orl	TMOD,#0x01 ; Timer 0 in Mode 1: 16-bit timer
 	
-	; Initialize the pins used by the ADC (P1.1, P1.7) as input.
-	orl	P1M1, #0b10000010
-	anl	P1M2, #0b01111101
+	; Initialize the pin used by the ADC (P1.1) as input.
+	orl	P1M1, #0b00000010
+	anl	P1M2, #0b11111101
 	
 	; Initialize and start the ADC:
 	anl ADCCON0, #0xF0
 	orl ADCCON0, #0x07 ; Select channel 7
 	; AINDIDS select if some pins are analog inputs or digital I/O:
 	mov AINDIDS, #0x00 ; Disable all analog inputs
-	orl AINDIDS, #0b10000001 ; Activate AIN0 and AIN7 analog inputs
+	orl AINDIDS, #0b10000000 ; P1.1 is analog input
 	orl ADCCON1, #0x01 ; Enable ADC
 	
 	ret
 	
-; Send a character using the serial port
-putchar:
-    jnb TI, putchar
-    clr TI
-    mov SBUF, a
-    ret
-
 wait_1ms:
 	clr	TR0 ; Stop timer 0
 	clr	TF0 ; Clear overflow flag
@@ -120,53 +116,67 @@ waitms:
 	djnz R2, waitms
 	ret
 
-;---------------------------------;
-; Send a BCD number to PuTTY      ;
-;---------------------------------;
-Send_BCD mac
-	push ar0
-	mov r0, %0
-	lcall ?Send_BCD
-	pop ar0
-endmac
-
-?Send_BCD:
-	push acc
-	; Write most significant digit
-	mov a, r0
-	swap a
-	anl a, #0fh
-	orl a, #30h
-	lcall putchar
-	; write least significant digit
-	mov a, r0
-	anl a, #0fh
-	orl a, #30h
-	lcall putchar
-	pop acc
-	ret
-
 ; We can display a number any way we want.  In this case with
 ; four decimal places.
 Display_formated_BCD:
-	Set_Cursor(2, 10)
+	Set_Cursor(2, 5)
+	Display_BCD(bcd+4)
+	Display_BCD(bcd+3) ;this is just in case temperatures exceed 100C and we're in deg F
 	Display_BCD(bcd+2)
 	Display_char(#'.')
 	Display_BCD(bcd+1)
 	Display_BCD(bcd+0)
-	Set_Cursor(2, 10)
-	;Display_char(#'=')
+	Set_Cursor(1, 13)
+	jnb deg, printfah
+	Send_Constant_String(#celcius)
+	sjmp printcel
+printfah:
+	Send_Constant_String(#fahren)
+printcel:
 	ret
+	
+putchar:
+jnb TI, putchar
+clr TI
+mov SBUF, a
+ret
+	
+main:
+	mov sp, #0x7f
+	lcall Init_All
+    lcall LCD_4BIT
+    setb deg ; degree flag set to celcius by default
+    
+    ; initial messages in LCD
+	Set_Cursor(1, 1)
+    Send_Constant_String(#test_message)
+	Set_Cursor(2, 1)
+    Send_Constant_String(#value_message)
+	
+Forever:
 
-Read_ADC:
+    ; Button for switching from celcius to fahrenheit
+    jb CtoF, deg_complete
+	wait_Milli_Seconds(#50)
+	jb CtoF, deg_complete
+	jnb CtoF, $
+	
+	;if degree is 1 (celcius) jump to setF and set to 0 (fahrenheit)
+	jb deg, setF
+	
+	;otherwise deg is 0 and needs to be set to 1
+	setb deg
+	ljmp deg_complete
+	
+setF:
+	clr deg
+	
+deg_complete:
 	clr ADCF
 	setb ADCS ;  ADC start trigger signal
     jnb ADCF, $ ; Wait for conversion complete
     
     ; Read the ADC result and store in [R1, R0]
-    mov a, ADCRL
-    anl a, #0x0f
-    mov R0, a
     mov a, ADCRH   
     swap a
     push acc
@@ -174,82 +184,51 @@ Read_ADC:
     mov R1, a
     pop acc
     anl a, #0xf0
-    orl a, R0
+    orl a, ADCRL
     mov R0, A
-	ret
-
-main:
-	mov sp, #0x7f
-	lcall Init_All
-    lcall LCD_4BIT
     
-    ; initial messages in LCD
-	Set_Cursor(1, 1)
-    Send_Constant_String(#test_message)
-	Set_Cursor(2, 1)
-    Send_Constant_String(#value_message)
-    
-Forever:
-
-	; Read the 2.08V LED voltage connected to AIN0 on pin 6
-	anl ADCCON0, #0xF0
-	orl ADCCON0, #0x00 ; Select channel 0
-
-	lcall Read_ADC
-	; Save result for later use
-	mov VLED_ADC+0, R0
-	mov VLED_ADC+1, R1
-
-	; Read the signal connected to AIN7
-	anl ADCCON0, #0xF0
-	orl ADCCON0, #0x07 ; Select channel 7
-	lcall Read_ADC
-    
-    ; Convert to voltage
+    ; Convert to voltage (vout)
 	mov x+0, R0
 	mov x+1, R1
-	; Pad other bits with zero
 	mov x+2, #0
 	mov x+3, #0
-	Load_y(20740) ; The MEASURED LED voltage: 2.074V, with 4 decimal places
-	lcall mul32 ; Get ADC * V_ref
-	; Retrive the ADC LED value
-	mov y+0, VLED_ADC+0
-	mov y+1, VLED_ADC+1
-	; Pad other bits with zero
-	mov y+2, #0
-	mov y+3, #0
-	lcall div32 ; Get V_out
-	; Calculate Temp based on V_out
-	Load_y(27300) ; The reference temp K
-	lcall sub32 ; Get Temp*0.01
-	; Change Temp*0.01 to Temp
-	Load_y(100)
+	Load_y(50300) ; VCC voltage measured (equals 4.99V)
+	lcall mul32 ;multiplying ADC * Vref
+	Load_y(4095) ; 2^12-1
+	lcall div32 ;now doing (ADC*Vref)/(4095)
+	
+	Load_y(1000) ; for converting volt to microvolt
+	lcall mul32 ;multiplying volts
+	
+	Load_y(10)
 	lcall mul32
-
-	;vout * 10^6  / 300 / 40.6 +cold junction
-
-	load_y(1000000)
+	
+	;convert to temperature
+	Load_y(23500) ;divide by the gain 
+	lcall div32 
+	Load_Y(41);load y = 41
+	lcall div32 ;divide by 41
+	
+	Load_y(10000)
 	lcall mul32
-	load_y (300)
-	lcall div32
-	lcall div32 40.6
-	load_y(22)
-	lcall add32 (40600)
-
-	; Convert to BCD and display
+	
+	Load_Y(220000) ;cold junction 19 deg C
+	lcall add32
+	
+	
+; Convert to BCD and display
+celc:
 	lcall hex2bcd
 	lcall Display_formated_BCD
-	Send_BCD(bcd+4)
-	Send_BCD(bcd+3)
-	Send_BCD(bcd+2)
-	mov a, #'.' ; I am guessing the decimal point is here...
+	
+	;send the BCD value to the MATLAB script
+	send_BCD(bcd+3)
+	send_BCD(bcd+2)
+	send_BCD(bcd+1)
+	send_BCD(bcd)
+	mov a, #'\r'
 	lcall putchar
-	Send_BCD(bcd+1)
-	Send_BCD(bcd+0)
-	mov a, #'\r' ; Return character
-	lcall putchar
-	mov a, #'\n' ; New-line character
+	mov a, #'\n'
 	lcall putchar
 	
 	; Wait 500 ms between conversions
@@ -257,7 +236,10 @@ Forever:
 	lcall waitms
 	mov R2, #250
 	lcall waitms
-	
+
+	cpl P1.7 ; Blinking LED...
+
 	ljmp Forever
+	
 END
 	
