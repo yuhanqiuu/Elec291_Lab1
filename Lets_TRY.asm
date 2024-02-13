@@ -24,17 +24,56 @@ TIMER0_RELOAD EQU ((65536-(CLK/TIMER0_RATE)))
 ;---------------------------------;
 ; Key board                       ;
 ;---------------------------------;
-B4_RATE equ 988
-B4_KEY EQU ((65536-(CLK/B4_RATE)))
-A4_RATE equ 880
-A4_KEY EQU ((65536-(CLK/A4_RATE)))
-Gs4_RATE equ 831
-Gs4_KEY EQU ((65536-(CLK/Gs4_RATE)))
-C5_RATE equ 1047
-C5_KEY EQU ((65536-(CLK/C5_RATE)))
+C3_RATE equ 262
+C3_KEY EQU ((65536-(CLK/C3_RATE)))
+D3_RATE equ 294
+D3_KEY EQU ((65536-(CLK/D3_RATE)))
+B3_RATE equ 494
+B3_KEY EQU ((65536-(CLK/B3_RATE)))
+Gs3_RATE equ 415
+Gs3_KEY EQU ((65536-(CLK/Gs3_RATE)))
+A3_RATE equ 440
+A3_KEY EQU ((65536-(CLK/A3_RATE)))
+
 C4_RATE equ 523
 C4_KEY EQU ((65536-(CLK/C4_RATE)))
+D4_RATE equ 587
+D4_KEY EQU ((65536-(CLK/C4_RATE)))
+E4_RATE equ 479
+E4_KEY EQU ((65536-(CLK/E4_RATE)))
+Gs4_RATE equ 831
+Gs4_KEY EQU ((65536-(CLK/Gs4_RATE)))
+A4_RATE equ 880
+A4_KEY EQU ((65536-(CLK/A4_RATE)))
+B4_RATE equ 988
+B4_KEY EQU ((65536-(CLK/B4_RATE)))
 
+C5_RATE equ 1047
+C5_KEY EQU ((65536-(CLK/C5_RATE)))
+D5_RATE equ 1175
+D5_KEY EQU ((65536-(CLK/D5_RATE)))
+Ds5_RATE equ 1245
+Ds5_KEY EQU ((65536-(CLK/Ds5_RATE)))
+E5_RATE equ 1319
+E5_KEY EQU ((65536-(CLK/E5_RATE)))
+F5_RATE equ 1397
+F5_KEY EQU ((65536-(CLK/F5_RATE)))
+Fs5_RATE equ 1480
+Fs5_KEY EQU ((65536-(CLK/Fs5_RATE)))
+G5_RATE equ 1568
+G5_KEY EQU ((65536-(CLK/G5_RATE)))
+Gs5_RATE equ 1661
+Gs5_KEY EQU ((65536-(CLK/Gs5_RATE)))
+A5_RATE equ 1760
+A5_KEY EQU ((65536-(CLK/A5_RATE)))
+B5_RATE equ 1976
+B5_KEY EQU ((65536-(CLK/B5_RATE)))
+
+C6_RATE equ 2093
+C6_KEY EQU ((65536-(CLK/C6_RATE)))
+E6_RATE equ 2637
+E6_KEY EQU ((65536-(CLK/E6_RATE)))
+MUTE_KEY EQU 0
 ;----------------------------------
 SOUND_OUT     equ P1.7
 
@@ -87,7 +126,7 @@ $include(LCD_4bit.inc) ; A library of LCD related functions and utility macros
 $LIST
 
 ;                     1234567890123456    <- This helps determine the location of the counter
-Initial_Message:  db 'BCD_counter: xx ', 0
+Initial_Message:  db '  >Music Test<  ', 0
 
 ;---------------------------------;
 ; Routine to initialize the ISR   ;
@@ -99,8 +138,8 @@ Timer0_Init:
 	anl a, #0xf0 ; 11110000 Clear the bits for timer 0
 	orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
 	mov TMOD, a
-	mov TH0, #high(TIMER0_RELOAD)
-	mov TL0, #low(TIMER0_RELOAD)
+	mov TH0, #high(B3_KEY)
+	mov TL0, #low(B3_KEY)
 	; Enable the timer and interrupts
     setb ET0  ; Enable timer 0 interrupt
     setb TR0  ; Start timer 0
@@ -143,26 +182,164 @@ main:
     lcall LCD_4BIT
     Send_Constant_String(#Initial_Message)
 
-loop_b:
-    mov Melody_Reload+1, #high(B4_KEY)
+Turkish_March:
+    mov Melody_Reload+1, #high(B3_KEY)
+	mov Melody_Reload+0, #low(B3_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(A3_KEY)
+	mov Melody_Reload+0, #low(A3_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(Gs3_KEY)
+	mov Melody_Reload+0, #low(Gs3_KEY)
+	Wait_Milli_Seconds(#120)
+	
+	mov Melody_Reload+1, #high(A3_KEY)
+	mov Melody_Reload+0, #low(A3_KEY)
+	Wait_Milli_Seconds(#120)
+;----------------------------------------
+	mov Melody_Reload+1, #high(C4_KEY)
+	mov Melody_Reload+0, #low(C4_KEY)
+	Wait_Milli_Seconds(#240)
+	Wait_Milli_Seconds(#240)
+	
+	mov Melody_Reload+1, #high(D4_KEY)
+	mov Melody_Reload+0, #low(D4_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(C4_KEY)
+	mov Melody_Reload+0, #low(C4_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(B4_KEY)
 	mov Melody_Reload+0, #low(B4_KEY)
-loop_c:
-	Wait_Milli_Seconds(#250)
-	mov Melody_Reload+1, #high(A4_KEY)
-	mov Melody_Reload+0, #low(A4_KEY)
-loop_d:
-	Wait_Milli_Seconds(#250)
-	mov Melody_Reload+1, #high(Gs4_KEY)
-	mov Melody_Reload+0, #low(Gs4_KEY)
-loop_e:
-	Wait_Milli_Seconds(#250)
-	mov Melody_Reload+1, #high(A4_KEY)
-	mov Melody_Reload+0, #low(A4_KEY)
-loop_f:
-	Wait_Milli_Seconds(#250)
+	Wait_Milli_Seconds(#120)
+
 	mov Melody_Reload+1, #high(C5_KEY)
 	mov Melody_Reload+0, #low(C5_KEY)
-	Wait_Milli_Seconds(#250)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(E5_KEY)
+	mov Melody_Reload+0, #low(E5_KEY)
+	Wait_Milli_Seconds(#240)
+	Wait_Milli_Seconds(#240)
+;-----------------------------------------
+	mov Melody_Reload+1, #high(F5_KEY)
+	mov Melody_Reload+0, #low(F5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(E5_KEY)
+	mov Melody_Reload+0, #low(E5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(Ds5_KEY)
+	mov Melody_Reload+0, #low(Ds5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(E5_KEY)
+	mov Melody_Reload+0, #low(E5_KEY)
+	Wait_Milli_Seconds(#120)
+;-----------------------------------------
+	mov Melody_Reload+1, #high(B5_KEY)
+	mov Melody_Reload+0, #low(B5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(Gs5_KEY)
+	mov Melody_Reload+0, #low(Gs5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#120)
+;--------------------------------------
+	mov Melody_Reload+1, #high(B5_KEY)
+	mov Melody_Reload+0, #low(B5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(Gs5_KEY)
+	mov Melody_Reload+0, #low(Gs5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(C6_KEY)
+	mov Melody_Reload+0, #low(C6_KEY)
+	Wait_Milli_Seconds(#240)
+	Wait_Milli_Seconds(#240)
+	
+;----------------------------------------
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(C6_KEY)
+	mov Melody_Reload+0, #low(C6_KEY)
+	Wait_Milli_Seconds(#240)
+;-----------------------------------------
+	mov Melody_Reload+1, #high(B5_KEY)
+	mov Melody_Reload+0, #low(B5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(G5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+;-----------------------------------------
+	mov Melody_Reload+1, #high(B5_KEY)
+	mov Melody_Reload+0, #low(B5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(G5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+;-----------------------------------------
+	mov Melody_Reload+1, #high(B5_KEY)
+	mov Melody_Reload+0, #low(B5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(G5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+	
+	mov Melody_Reload+1, #high(Fs5_KEY)
+	mov Melody_Reload+0, #low(Fs5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(E5_KEY)
+	mov Melody_Reload+0, #low(E5_KEY)
+	Wait_Milli_Seconds(#240)
+	Wait_Milli_Seconds(#240)
+
 forever:
 	clr TR0
 	sjmp forever
