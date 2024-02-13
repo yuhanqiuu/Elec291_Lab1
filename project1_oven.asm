@@ -476,7 +476,7 @@ main:
 	mov seconds, #0x00
 	mov soak_temp, #0xE0 
 	mov soak_time, #0x60
-	mov reflow_temp, #0x230
+	mov reflow_temp, #0xE6 ; 230
 	mov reflow_time, #0x30
 	setb TR2
     
