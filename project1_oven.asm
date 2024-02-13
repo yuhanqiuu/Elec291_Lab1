@@ -41,7 +41,7 @@ ORG 0x0000
 ; Define any constant string here ;
 ;---------------------------------;
 ;                	  1234567890123456    <- This helps determine the location of the counter
-To_Message:  	  db 'To=xxxC Tj= xxC ', 0
+To_Message:  	  db 'To=xxxC Tj= 22C ', 0
 Time_temp_display:db 'sxxx,xx rxxx,xx ', 0 ; soak temp,time reflow temp,time
 Ramp_to_soak:	  db 'RampToSoak s=xxx', 0 ; state 1 display
 Soak_display: 	  db 'Soak 		 s=xxx', 0 ; state 2 display
@@ -377,7 +377,7 @@ Display_formated_BCD:
 	Display_BCD(bcd+2)
 
 	Set_Cursor(1, 13)
-	Send_Constant_String(#22) ; display Tj=22
+	;Send_Constant_String(#22) ; display Tj=22
 	ret
 
 
