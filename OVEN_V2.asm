@@ -99,7 +99,6 @@ start_stop_flag: dbit 1 ; Set to one if button is pressed to start, press again 
 
 $NOLIST
 $include(math32.inc)
-$LIST
 
 ;---------------------------------;
 ; Routine to initialize the ISR   ;
@@ -224,6 +223,8 @@ Init_All:
 	ret
 	
 ; Send a character using the serial port
+
+
 putchar:
     jnb TI, putchar
     clr TI
@@ -245,106 +246,6 @@ waitms:
 	djnz R2, waitms
 	ret
 
-;---------------------------------;
-; 	 5_pushbuttons function	      ;
-;---------------------------------;
-LCD_PB:
-	; Set variables to 1: 'no push button pressed'
-	setb PB0
-	setb PB1
-	setb PB2
-	setb PB3
-	setb PB4
-	; The input pin used to check set to '1'
-	setb P1.5
-	
-	; Check if any push button is pressed
-	clr P0.0
-	clr P0.1
-	clr P0.2
-	clr P0.3
-	clr P1.3
-	jb P1.5, LCD_PB_Done
-
-	; Debounce
-	mov R2, #50
-	lcall waitms
-	jb P1.5, LCD_PB_Done
-
-	; Set the LCD data pins to logic 1
-	setb P0.0
-	setb P0.1
-	setb P0.2
-	setb P0.3
-	setb P1.3
-	
-	; Check the push buttons one by one
-	clr P1.3
-	mov c, P1.5
-	mov PB4, c
-	setb P1.3
-	jnb PB4,increment_soak_temp
-
-	clr P0.0
-	mov c, P1.5
-	mov PB3, c
-	setb P0.0
-	jnb PB3, increment_soak_time
-	
-	clr P0.1
-	mov c, P1.5
-	mov PB2, c
-	setb P0.1
-	jnb PB2, increment_reflow_temp
-	
-	clr P0.2
-	mov c, P1.5
-	mov PB1, c
-	setb P0.2
-	jnb PB1, increment_reflow_time
-	
-	clr P0.3
-	mov c, P1.5
-	mov PB0, c
-	setb P0.3
-	jnb PB0, start_stop
-
-
-LCD_PB_Done:		
-	ret
-
-increment_soak_temp:
-	inc soak_temp
-	mov a, soak_temp
-	cjne a, #240, LCD_PB_Done
-	mov soak_temp, #0x00
-	sjmp LCD_PB_Done
-increment_soak_time:
-	inc soak_time
-	mov a, soak_time
-	cjne a, #120, LCD_PB_Done
-	mov soak_time, #0x00
-	sjmp LCD_PB_Done
-increment_reflow_temp: 
-	inc reflow_temp
-	mov a, reflow_temp
-	cjne a, #240, LCD_PB_Done
-	mov reflow_temp, #0x00
-	sjmp LCD_PB_Done
-increment_reflow_time:
-	inc reflow_time
-	mov a, reflow_time
-	cjne a, #75, LCD_PB_Done
-	mov reflow_time, #0x00
-	sjmp LCD_PB_Done
-
-start_stop:
-	cpl start_stop_flag
-	sjmp LCD_PB_Done
-
-
-; We can display a number any way we want.  In this case with
-; four decimal places.
 Display_formated_BCD:
 	Set_Cursor(1, 4) ; display To
 	Display_BCD(bcd+4)
