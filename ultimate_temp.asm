@@ -115,6 +115,28 @@ waitms:
 	lcall wait_1ms
 	djnz R2, waitms
 	ret
+send_BCD mac
+	push ar0
+	mov r0, %0
+	lcall ?send_BCD
+	pop ar0
+endmac
+
+?send_BCD:
+	push acc
+	; Write most significant digit
+	mov a, r0
+	swap a
+	anl a, #0fh
+	orl a, #30h
+	lcall putchar
+	; write least significant digit
+	mov a, r0
+	anl a, #0fh
+	orl a, #30h
+	lcall putchar
+	pop acc
+	ret
 
 ; We can display a number any way we want.  In this case with
 ; four decimal places.

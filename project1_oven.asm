@@ -342,31 +342,6 @@ start_stop:
 	cpl start_stop_flag
 	sjmp LCD_PB_Done
 
-;---------------------------------;
-; Send a BCD number to PuTTY      ;
-;---------------------------------;
-Send_BCD mac
-	push ar0
-	mov r0, %0
-	lcall ?Send_BCD
-	pop ar0
-endmac
-
-?Send_BCD:
-	push acc
-	; Write most significant digit
-	mov a, r0
-	swap a
-	anl a, #0fh
-	orl a, #30h
-	lcall putchar
-	; write least significant digit
-	mov a, r0
-	anl a, #0fh
-	orl a, #30h
-	lcall putchar
-	pop acc
-	ret
 
 ; We can display a number any way we want.  In this case with
 ; four decimal places.
@@ -376,7 +351,7 @@ Display_formated_BCD:
 	Display_BCD(bcd+3) ;this is just in case temperatures exceed 100C and we're in deg F
 	Display_BCD(bcd+2)
 
-	Set_Cursor(1, 13)
+	;Set_Cursor(1, 13)
 	;Send_Constant_String(#22) ; display Tj=22
 	ret
 
@@ -443,10 +418,10 @@ Display_Data:
 	lcall Display_formated_BCD
 	
 	;send the BCD value to the MATLAB script
-	send_BCD(bcd+3)
-	send_BCD(bcd+2)
-	send_BCD(bcd+1)
-	send_BCD(bcd)
+	Send_BCD(bcd+3)
+	Send_BCD(bcd+2)
+	Send_BCD(bcd+1)
+	Send_BCD(bcd)
 	mov a, #'\r'
 	lcall putchar
 	mov a, #'\n'
