@@ -116,14 +116,14 @@ waitms:
 	djnz R2, waitms
 	ret
 
-Send_BCD mac
+send_BCD mac
 	push ar0
 	mov r0, %0
-	lcall ?Send_BCD
+	lcall ?send_BCD
 	pop ar0
 endmac
 
-?Send_BCD:
+?send_BCD:
 	push acc
 	; Write most significant digit
 	mov a, r0
