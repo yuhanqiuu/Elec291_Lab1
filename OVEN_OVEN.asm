@@ -29,7 +29,18 @@ Ramp_to_peak: 	  db 'RampToPeak s=xxx', 0 ; state 3 display
 Reflow_display:   db 'Reflow 	 s=xxx', 0 ; state 4 display
 Cooling_display:  db 'Cooling 	 s=xxx', 0 ; state 5 display
 ;---------------------------------------------
+cseg
 
+LCD_RS equ P1.3
+LCD_E  equ P1.4
+LCD_D4 equ P0.0
+LCD_D5 equ P0.1
+LCD_D6 equ P0.2
+LCD_D7 equ P0.3
+
+$NOLIST
+$include(LCD_4bit.inc) ; A library of LCD related functions and utility macros
+$LIST
 main:
 
     Set_Cursor(1, 1)

@@ -356,6 +356,8 @@ Display_Data:
 	reti
 
 main:
+
+    ;intialized value
 	mov sp, #0x7f
 	lcall Init_All
     lcall LCD_4BIT
@@ -375,7 +377,7 @@ main:
 	;mov reflow_temp, #230
 	;mov reflow_time, #30
 	setb TR2
-    ljmp main
+    ;ljmp main
 forever:
     sjmp forever
 end
