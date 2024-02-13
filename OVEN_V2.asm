@@ -29,13 +29,37 @@ TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
 ;---------------------------------;
 ; Define any buttons & pins here  ;
 ;---------------------------------;
-;!!!!!arbiturary value for now
 SOUND_OUT   equ p1.7 ; speaker pin
-; Output
 PWM_OUT    EQU P1.0 ; Logic 1=oven on
 ;---------------------------------------------
-ORG 0x0000
-	ljmp main
+; Reset vector
+org 0x0000
+    ljmp main
+
+; External interrupt 0 vector (not used in this code)
+org 0x0003
+	reti
+
+; Timer/Counter 0 overflow interrupt vector
+org 0x000B
+	ljmp Timer0_ISR
+
+; External interrupt 1 vector (not used in this code)
+org 0x0013
+	reti
+
+; Timer/Counter 1 overflow interrupt vector (not used in this code)
+org 0x001B
+	reti
+
+; Serial port receive/transmit interrupt vector (not used in this code)
+org 0x0023 
+	reti
+	
+; Timer/Counter 2 overflow interrupt vector
+org 0x002B
+	ljmp Timer2_ISR
+
 
 ;---------------------------------;
 ; Define any constant string here ;
@@ -49,8 +73,9 @@ Ramp_to_peak: 	  db 'RampToPeak s=xxx', 0 ; state 3 display
 Reflow_display:   db 'Reflow 	 s=xxx', 0 ; state 4 display
 Cooling_display:  db 'Cooling 	 s=xxx', 0 ; state 5 display
 ;---------------------------------------------
-cseg
 
+
+cseg
 LCD_RS equ P1.3
 LCD_E  equ P1.4
 LCD_D4 equ P0.0
@@ -96,6 +121,7 @@ PB3: dbit 1 	; increment soak time
 PB4: dbit 1 	; increment soak temp
 start_stop_flag: dbit 1 ; Set to one if button is pressed to start, press again to stop
 ;---------------------------------------------
+
 
 $NOLIST
 $include(math32.inc)
@@ -224,13 +250,6 @@ Init_All:
 	
 ; Send a character using the serial port
 
-
-putchar:
-    jnb TI, putchar
-    clr TI
-    mov SBUF, a
-    ret
-
 wait_1ms:
 	clr	TR0 ; Stop timer 0
 	clr	TF0 ; Clear overflow flag
@@ -344,16 +363,19 @@ main:
     lcall Timer2_Init
     setb EA   ; Enable Global interrupts
     ; initial messages in LCD
+    
 	Set_Cursor(1, 1)
     Send_Constant_String(#To_Message)
 	Set_Cursor(2, 1)
     Send_Constant_String(#Time_temp_display)
 	
-	mov seconds, #0x00
-	mov soak_temp, #0xE0 
-	mov soak_time, #0x60
-	mov reflow_temp, #0xE6 ; 230
-	mov reflow_time, #0x30
+	;mov seconds, #0
+	;mov soak_temp, #140 
+	;mov soak_time, #60
+	;mov reflow_temp, #230
+	;mov reflow_time, #30
 	setb TR2
-    
+    ljmp main
+forever:
+    sjmp forever
 end

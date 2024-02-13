@@ -29,13 +29,36 @@ TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
 ;---------------------------------;
 ; Define any buttons & pins here  ;
 ;---------------------------------;
-;!!!!!arbiturary value for now
 SOUND_OUT   equ p1.7 ; speaker pin
-; Output
-PWM_OUT    EQU P1.0 ; Logic 1=oven on
+PWM_OUT    EQU P1.0 ; Logic 1 = oven on
 ;---------------------------------------------
+
 ORG 0x0000
 	ljmp main
+
+; External interrupt 0 vector (not used in this code)
+org 0x0003
+	reti
+
+; Timer/Counter 0 overflow interrupt vector
+org 0x000B
+	ljmp Timer0_ISR
+
+; External interrupt 1 vector (not used in this code)
+org 0x0013
+	reti
+
+; Timer/Counter 1 overflow interrupt vector (not used in this code)
+org 0x001B
+	reti
+
+; Serial port receive/transmit interrupt vector (not used in this code)
+org 0x0023 
+	reti
+	
+; Timer/Counter 2 overflow interrupt vector
+org 0x002B
+	ljmp Timer2_ISR
 
 ;---------------------------------;
 ; Define any constant string here ;
@@ -222,13 +245,6 @@ Init_All:
 	orl ADCCON1, #0x01 ; Enable ADC
 	
 	ret
-	
-; Send a character using the serial port
-putchar:
-    jnb TI, putchar
-    clr TI
-    mov SBUF, a
-    ret
 
 wait_1ms:
 	clr	TR0 ; Stop timer 0
@@ -308,7 +324,6 @@ LCD_PB:
 	mov PB0, c
 	setb P0.3
 	jnb PB0, start_stop
-
 
 LCD_PB_Done:		
 	ret
@@ -448,11 +463,11 @@ main:
 	Set_Cursor(2, 1)
     Send_Constant_String(#Time_temp_display)
 	
-	mov seconds, #0x00
-	mov soak_temp, #0xE0 
-	mov soak_time, #0x60
-	mov reflow_temp, #0xE6 ; 230
-	mov reflow_time, #0x30
+	mov seconds, #0
+	mov soak_temp, #140 
+	mov soak_time, #60
+	mov reflow_temp, #230
+	mov reflow_time, #30
 	setb TR2
     
 ;---------------------------------;

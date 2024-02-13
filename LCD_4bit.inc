@@ -201,6 +201,12 @@ Display_char mac
 	pop acc
 endmac
 
+putchar:
+    jnb TI, putchar
+    clr TI
+    mov SBUF, a
+    ret
+
 ;---------------------------------;
 ; Send a BCD number to PuTTY      ;
 ;---------------------------------;

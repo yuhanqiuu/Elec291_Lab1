@@ -27,95 +27,94 @@
 0000             29   ;---------------------------------;
 0000             30   ; Define any buttons & pins here  ;
 0000             31   ;---------------------------------;
-0000             32   ;!!!!!arbiturary value for now
-0000             33   SOUND_OUT   equ p1.7 ; speaker pin
-0000             34   ; Output
-0000             35   PWM_OUT    EQU P1.0 ; Logic 1=oven on
-0000             36   ;---------------------------------------------
-0000             37   ORG 0x0000
-0000 020579      38            ljmp main
-0003             39   
+0000             32   SOUND_OUT   equ p1.7 ; speaker pin
+0000             33   PWM_OUT    EQU P1.0 ; Logic 1=oven on
+0000             34   ;---------------------------------------------
+0000             35   ORG 0x0000
+0000 020579      36            ljmp main
+0003             37   
+0003             38   ;---------------------------------;
+0003             39   ; Define any constant string here ;
 0003             40   ;---------------------------------;
-0003             41   ; Define any constant string here ;
-0003             42   ;---------------------------------;
-0003             43   ;                          1234567890123456    <- This helps determine the location of the counter
-0003 546F3D78    44   To_Message:        db 'To=xxxC Tj= 22C ', 0
+0003             41   ;                          1234567890123456    <- This helps determine the location of the counter
+0003 546F3D78    42   To_Message:        db 'To=xxxC Tj= 22C ', 0
      78784320
      546A3D20
      32324320
      00
-0014 73787878    45   Time_temp_display:db 'sxxx,xx rxxx,xx ', 0 ; soak temp,time reflow temp,time
+0014 73787878    43   Time_temp_display:db 'sxxx,xx rxxx,xx ', 0 ; soak temp,time reflow temp,time
      2C787820
      72787878
      2C787820
      00
-0025 52616D70    46   Ramp_to_soak:      db 'RampToSoak s=xxx', 0 ; state 1 display
+0025 52616D70    44   Ramp_to_soak:      db 'RampToSoak s=xxx', 0 ; state 1 display
      546F536F
      616B2073
      3D787878
      00
-0036 536F616B    47   Soak_display:      db 'Soak               s=xxx', 0 ; state 2 display
+0036 536F616B    45   Soak_display:      db 'Soak               s=xxx', 0 ; state 2 display
      20090920
      733D7878
      7800
-0044 52616D70    48   Ramp_to_peak:      db 'RampToPeak s=xxx', 0 ; state 3 display
+0044 52616D70    46   Ramp_to_peak:      db 'RampToPeak s=xxx', 0 ; state 3 display
      546F5065
      616B2073
      3D787878
      00
-0055 5265666C    49   Reflow_display:   db 'Reflow      s=xxx', 0 ; state 4 display
+0055 5265666C    47   Reflow_display:   db 'Reflow      s=xxx', 0 ; state 4 display
      6F772009
      20733D78
      787800
-0064 436F6F6C    50   Cooling_display:  db 'Cooling     s=xxx', 0 ; state 5 display
+0064 436F6F6C    48   Cooling_display:  db 'Cooling     s=xxx', 0 ; state 5 display
      696E6720
      0920733D
      78787800
-0074             51   ;---------------------------------------------
+0074             49   ;---------------------------------------------
+0074             50   
+0074             51   
 0074             52   cseg
-0074             53   
-0074             54   LCD_RS equ P1.3
-0074             55   LCD_E  equ P1.4
-0074             56   LCD_D4 equ P0.0
-0074             57   LCD_D5 equ P0.1
-0074             58   LCD_D6 equ P0.2
-0074             59   LCD_D7 equ P0.3
-0074             60   
-                 62   $LIST
-013E             64   
-013E             65   ;---------------------------------;
-013E             66   ; Define variables here           ;
-013E             67   ;---------------------------------;
-013E             68   ; These register definitions needed by 'math32.inc'
-0030             69   DSEG at 30H
-0030             70   x:   ds 4
-0034             71   y:   ds 4
-0038             72   bcd: ds 5   ;temperature variable for reading
-003D             73   Count1ms:     ds 2 ; Used to determine when one second has passed
-003F             74   seconds: ds 1
-0040             75   VLED_ADC: ds 2
-0042             76   reflow_time: ds 1 ; time parameter for reflow    
-0043             77   reflow_temp: ds 1 ; temp parameter for reflow
-0044             78   soak_time: ds 1 ; time parameter for soak
-0045             79   soak_temp: ds 1 ; temp parameter for soak
-0046             80   pwm_counter: ds 1 ; power counter
-0047             81   pwm: ds 1 ; variable to count the power percentage
-0048             82   temp: ds 3
-004B             83   FSM_state: ds 1
-004C             84   ;---------------------------------------------
-004C             85   
-004C             86   ;---------------------------------;
-004C             87   ; Define flags here               ;
-004C             88   ;---------------------------------;
-0000             89   BSEG
-0000             90   mf: dbit 1
-0001             91   s_flag: dbit 1 ; Set to one in the ISR every time 1000 ms had passed
-0002             92   PB0: dbit 1      ; start/stop
-0003             93   PB1: dbit 1      ; increment reflow time
-0004             94   PB2: dbit 1      ; increment reflow temp
-0005             95   PB3: dbit 1      ; increment soak time
-0006             96   PB4: dbit 1      ; increment soak temp
-0007             97   start_stop_flag: dbit 1 ; Set to one if button is pressed to start, press again to stop
-0008             98   ;---------------------------------------------
-0008             99   
+0074             53   LCD_RS equ P1.3
+0074             54   LCD_E  equ P1.4
+0074             55   LCD_D4 equ P0.0
+0074             56   LCD_D5 equ P0.1
+0074             57   LCD_D6 equ P0.2
+0074             58   LCD_D7 equ P0.3
+0074             59   
+                 61   $LIST
+0146             63   
+0146             64   ;---------------------------------;
+0146             65   ; Define variables here           ;
+0146             66   ;---------------------------------;
+0146             67   ; These register definitions needed by 'math32.inc'
+0030             68   DSEG at 30H
+0030             69   x:   ds 4
+0034             70   y:   ds 4
+0038             71   bcd: ds 5   ;temperature variable for reading
+003D             72   Count1ms:     ds 2 ; Used to determine when one second has passed
+003F             73   seconds: ds 1
+0040             74   VLED_ADC: ds 2
+0042             75   reflow_time: ds 1 ; time parameter for reflow    
+0043             76   reflow_temp: ds 1 ; temp parameter for reflow
+0044             77   soak_time: ds 1 ; time parameter for soak
+0045             78   soak_temp: ds 1 ; temp parameter for soak
+0046             79   pwm_counter: ds 1 ; power counter
+0047             80   pwm: ds 1 ; variable to count the power percentage
+0048             81   temp: ds 3
+004B             82   FSM_state: ds 1
+004C             83   ;---------------------------------------------
+004C             84   
+004C             85   ;---------------------------------;
+004C             86   ; Define flags here               ;
+004C             87   ;---------------------------------;
+0000             88   BSEG
+0000             89   mf: dbit 1
+0001             90   s_flag: dbit 1 ; Set to one in the ISR every time 1000 ms had passed
+0002             91   PB0: dbit 1      ; start/stop
+0003             92   PB1: dbit 1      ; increment reflow time
+0004             93   PB2: dbit 1      ; increment reflow temp
+0005             94   PB3: dbit 1      ; increment soak time
+0006             95   PB4: dbit 1      ; increment soak temp
+0007             96   start_stop_flag: dbit 1 ; Set to one if button is pressed to start, press again to stop
+0008             97   ;---------------------------------------------
+0008             98   
                 546   $LIST

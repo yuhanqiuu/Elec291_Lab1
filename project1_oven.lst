@@ -82,11 +82,11 @@
 0074             59   LCD_D7 equ P0.3
 0074             60   
                  62   $LIST
-013E             64   
-013E             65   ;---------------------------------;
-013E             66   ; Define variables here           ;
-013E             67   ;---------------------------------;
-013E             68   ; These register definitions needed by 'math32.inc'
+0146             64   
+0146             65   ;---------------------------------;
+0146             66   ; Define variables here           ;
+0146             67   ;---------------------------------;
+0146             68   ; These register definitions needed by 'math32.inc'
 0030             69   DSEG at 30H
 0030             70   x:   ds 4
 0034             71   y:   ds 4
@@ -120,603 +120,596 @@
 0008             99   
                 546   $LIST
                 101   $LIST
-03AE            103   
-03AE            104   ;---------------------------------;
-03AE            105   ; Routine to initialize the ISR   ;
-03AE            106   ; for timer 0                     ;
-03AE            107   ;---------------------------------;
-03AE            108   Timer0_Init:
-03AE 438E08     109            orl CKCON, #0b00001000 ; Input for timer 0 is sysclk/1
-03B1 E589       110            mov a, TMOD
-03B3 54F0       111            anl a, #0xf0 ; 11110000 Clear the bits for timer 0
-03B5 4401       112            orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
-03B7 F589       113            mov TMOD, a
-03B9 758CF0     114            mov TH0, #high(TIMER0_RELOAD)
-03BC 758A2C     115            mov TL0, #low(TIMER0_RELOAD)
-03BF            116            ; Enable the timer and interrupts
-03BF D2A9       117       setb ET0  ; Enable timer 0 interrupt
-03C1 D28C       118       setb TR0  ; Start timer 0
-03C3 22         119            ret
-03C4            120   
-03C4            121   ;---------------------------------;
-03C4            122   ; ISR for timer 0.  Set to execute;
-03C4            123   ; every 1/4096Hz to generate a    ;
-03C4            124   ; 2048 Hz wave at pin SOUND_OUT   ;
-03C4            125   ;---------------------------------;
-03C4            126   Timer0_ISR:
-03C4            127            ;clr TF0  ; According to the data sheet this is done for us already.
-03C4            128            ; Timer 0 doesn't have 16-bit auto-reload, so
-03C4 C28C       129            clr TR0
-03C6 758CF0     130            mov TH0, #high(TIMER0_RELOAD)
-03C9 758A2C     131            mov TL0, #low(TIMER0_RELOAD)
-03CC D28C       132            setb TR0
-03CE B297       133            cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
-03D0 32         134            reti
-03D1            135   
-03D1            136   ;---------------------------------;
-03D1            137   ; Routine to initialize the ISR   ;
-03D1            138   ; for timer 2                     ;
-03D1            139   ;---------------------------------;
-03D1            140   Timer2_Init:
-03D1 75C800     141            mov T2CON, #0 ; Stop timer/counter.  Autoreload mode.
-03D4 75CDBF     142            mov TH2, #high(TIMER2_RELOAD)
-03D7 75CC28     143            mov TL2, #low(TIMER2_RELOAD)
-03DA            144            ; Set the reload value
-03DA 43C980     145            orl T2MOD, #0x80 ; Enable timer 2 autoreload
-03DD 75CBBF     146            mov RCMP2H, #high(TIMER2_RELOAD)
-03E0 75CA28     147            mov RCMP2L, #low(TIMER2_RELOAD)
-03E3            148            ; Init One millisecond interrupt counter.  It is a 16-bit variable made with two 8-bit parts
-03E3 E4         149            clr a
-03E4 F53D       150            mov Count1ms+0, a
-03E6 F53E       151            mov Count1ms+1, a
-03E8 754700     152            mov pwm, #0
-03EB            153            ; Enable the timer and interrupts
-03EB 439B80     154            orl EIE, #0x80 ; Enable timer 2 interrupt ET2=1
-03EE D2CA       155       setb TR2  ; Enable timer 2
-03F0 22         156            ret
-03F1            157   
-03F1            158   ;---------------------------------;
-03F1            159   ; ISR for timer 2 ;
-03F1            160   ;---------------------------------;
-03F1            161   Timer2_ISR:
-03F1 C2CF       162            clr TF2 ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR. It is bit addressable.
-03F3 B284       163            cpl P0.4 ; To check the interrupt rate with oscilloscope. It must be precisely a 1 ms pulse.
-03F5            164                    
-03F5            165            ; The two registers used in the ISR must be saved in the stack
-03F5 C0D0       166            push psw
-03F7 C0E0       167            push acc
-03F9 0546       168            inc pwm_counter
-03FB C3         169            clr c
-03FC E547       170            mov a, pwm
-03FE 9546       171            subb a, pwm_counter ; If pwm_counter <= pwm then c=1
-0400 B3         172            cpl c
-0401 9290       173            mov PWM_OUT, c
-0403 E546       174            mov a, pwm_counter
-0405 B46407     175            cjne a, #100, Timer2_ISR_done
-0408 754600     176            mov pwm_counter, #0
-040B 053F       177            inc seconds ; It is super easy to keep a seconds count here
-040D D201       178            setb s_flag
-040F            179   
-040F            180   Timer2_ISR_done:
-040F D0E0       181            pop acc
-0411 D0D0       182            pop psw
-0413 32         183            reti
-0414            184   
-0414            185   ;---------------------------------;
-0414            186   ; Temperature senseor function    ;
-0414            187   ;---------------------------------;
-0414            188   Init_All:
-0414            189            ; Configure all the pins for biderectional I/O
-0414 75AC00     190            mov     P3M1, #0x00
-0417 75AD00     191            mov     P3M2, #0x00
-041A 75B300     192            mov     P1M1, #0x00
-041D 75B400     193            mov     P1M2, #0x00
-0420 75B100     194            mov     P0M1, #0x00
-0423 75B200     195            mov     P0M2, #0x00
-0426            196            
-0426 438E10     197            orl     CKCON, #0x10 ; CLK is the input for timer 1
-0429 438780     198            orl     PCON, #0x80 ; Bit SMOD=1, double baud rate
-042C 759852     199            mov     SCON, #0x52
-042F 53C4DF     200            anl     T3CON, #0b11011111
-0432 53890F     201            anl     TMOD, #0x0F ; Clear the configuration bits for timer 1
-0435 438920     202            orl     TMOD, #0x20 ; Timer 1 Mode 2
-0438 758DF7     203            mov     TH1, #TIMER1_RELOAD ; TH1=TIMER1_RELOAD;
-043B D28E       204            setb TR1
-043D            205            
-043D            206            ; Using timer 0 for delay functions.  Initialize here:
-043D C28C       207            clr     TR0 ; Stop timer 0
-043F 438E08     208            orl     CKCON,#0x08 ; CLK is the input for timer 0
-0442 5389F0     209            anl     TMOD,#0xF0 ; Clear the configuration bits for timer 0
-0445 438901     210            orl     TMOD,#0x01 ; Timer 0 in Mode 1: 16-bit timer
-0448            211            
-0448            212            ; Initialize the pins used by the ADC (P1.1, P1.7) as input.
-0448 43B382     213            orl     P1M1, #0b10000010
-044B 53B47D     214            anl     P1M2, #0b01111101
-044E            215            
-044E            216            ; Initialize and start the ADC:
-044E 53E8F0     217            anl ADCCON0, #0xF0
-0451 43E807     218            orl ADCCON0, #0x07 ; Select channel 7
-0454            219            ; AINDIDS select if some pins are analog inputs or digital I/O:
-0454 75F600     220            mov AINDIDS, #0x00 ; Disable all analog inputs
-0457 43F681     221            orl AINDIDS, #0b10000001 ; Activate AIN0 and AIN7 analog inputs
-045A 43E101     222            orl ADCCON1, #0x01 ; Enable ADC
-045D            223            
-045D 22         224            ret
-045E            225            
-045E            226   ; Send a character using the serial port
-045E            227   putchar:
-045E 3099FD     228       jnb TI, putchar
-0461 C299       229       clr TI
-0463 F599       230       mov SBUF, a
-0465 22         231       ret
-0466            232   
-0466            233   wait_1ms:
-0466 C28C       234            clr     TR0 ; Stop timer 0
-0468 C28D       235            clr     TF0 ; Clear overflow flag
-046A 758CBF     236            mov     TH0, #high(TIMER0_RELOAD_1MS)
-046D 758A28     237            mov     TL0,#low(TIMER0_RELOAD_1MS)
-0470 D28C       238            setb TR0
-0472 308DFD     239            jnb     TF0, $ ; Wait for overflow
-0475 22         240            ret
-0476            241   
-0476            242   ; Wait the number of miliseconds in R2
-0476            243   waitms:
-0476 120466     244            lcall wait_1ms
-0479 DAFB       245            djnz R2, waitms
-047B 22         246            ret
-047C            247   
-047C            248   ;---------------------------------;
-047C            249   ;         5_pushbuttons function               ;
-047C            250   ;---------------------------------;
-047C            251   LCD_PB:
-047C            252            ; Set variables to 1: 'no push button pressed'
-047C D202       253            setb PB0
-047E D203       254            setb PB1
-0480 D204       255            setb PB2
-0482 D205       256            setb PB3
-0484 D206       257            setb PB4
-0486            258            ; The input pin used to check set to '1'
-0486 D295       259            setb P1.5
-0488            260            
-0488            261            ; Check if any push button is pressed
-0488 C280       262            clr P0.0
-048A C281       263            clr P0.1
-048C C282       264            clr P0.2
-048E C283       265            clr P0.3
-0490 C293       266            clr P1.3
-0492 209549     267            jb P1.5, LCD_PB_Done
-0495            268   
-0495            269            ; Debounce
-0495 7A32       270            mov R2, #50
-0497 120476     271            lcall waitms
-049A 209541     272            jb P1.5, LCD_PB_Done
-049D            273   
-049D            274            ; Set the LCD data pins to logic 1
-049D D280       275            setb P0.0
-049F D281       276            setb P0.1
-04A1 D282       277            setb P0.2
-04A3 D283       278            setb P0.3
-04A5 D293       279            setb P1.3
-04A7            280            
-04A7            281            ; Check the push buttons one by one
-04A7 C293       282            clr P1.3
-04A9 A295       283            mov c, P1.5
-04AB 9206       284            mov PB4, c
-04AD D293       285            setb P1.3
-04AF 30062D     286            jnb PB4,increment_soak_temp
-04B2            287   
-04B2 C280       288            clr P0.0
-04B4 A295       289            mov c, P1.5
-04B6 9205       290            mov PB3, c
-04B8 D280       291            setb P0.0
-04BA 30052E     292            jnb PB3, increment_soak_time
-04BD            293            
-04BD C281       294            clr P0.1
-04BF A295       295            mov c, P1.5
-04C1 9204       296            mov PB2, c
-04C3 D281       297            setb P0.1
-04C5 30042F     298            jnb PB2, increment_reflow_temp
-04C8            299            
-04C8 C282       300            clr P0.2
-04CA A295       301            mov c, P1.5
-04CC 9203       302            mov PB1, c
-04CE D282       303            setb P0.2
-04D0 300330     304            jnb PB1, increment_reflow_time
-04D3            305            
-04D3 C283       306            clr P0.3
-04D5 A295       307            mov c, P1.5
-04D7 9202       308            mov PB0, c
-04D9 D283       309            setb P0.3
-04DB 300231     310            jnb PB0, start_stop
-04DE            311   
-04DE            312   
-04DE            313   LCD_PB_Done:             
-04DE 22         314            ret
-04DF            315   
-04DF            316   increment_soak_temp:
-04DF 0545       317            inc soak_temp
-04E1 E545       318            mov a, soak_temp
-04E3 B4F0F8     319            cjne a, #240, LCD_PB_Done
-04E6 754500     320            mov soak_temp, #0x00
-04E9 80F3       321            sjmp LCD_PB_Done
-04EB            322   increment_soak_time:
-04EB 0544       323            inc soak_time
-04ED E544       324            mov a, soak_time
-04EF B478EC     325            cjne a, #120, LCD_PB_Done
-04F2 754400     326            mov soak_time, #0x00
-04F5 80E7       327            sjmp LCD_PB_Done
-04F7            328   increment_reflow_temp: 
-04F7 0543       329            inc reflow_temp
-04F9 E543       330            mov a, reflow_temp
-04FB B4F0E0     331            cjne a, #240, LCD_PB_Done
-04FE 754300     332            mov reflow_temp, #0x00
-0501 80DB       333            sjmp LCD_PB_Done
-0503            334   increment_reflow_time:
-0503 0542       335            inc reflow_time
-0505 E542       336            mov a, reflow_time
-0507 B44BD4     337            cjne a, #75, LCD_PB_Done
-050A 754200     338            mov reflow_time, #0x00
-050D 80CF       339            sjmp LCD_PB_Done
-050F            340   
-050F            341   start_stop:
-050F B207       342            cpl start_stop_flag
-0511 80CB       343            sjmp LCD_PB_Done
-0513            344   
-0513            345   
-0513            346   ; We can display a number any way we want.  In this case with
-0513            347   ; four decimal places.
-0513            348   Display_formated_BCD:
-0513 C0E0       349            push acc
-0515 7404       349            mov a, #4
-0517 14         349            dec a
-0518 12010D     349            lcall ?Set_Cursor_1 ; Select column and row
-051B D0E0       349            pop acc ; display To
-051D C000       350            push ar0
-051F A83C       350            mov r0, bcd+4
-0521 120112     350            lcall ?Display_BCD
-0524 D000       350            pop ar0
-0526 C000       351            push ar0
-0528 A83B       351            mov r0, bcd+3
-052A 120112     351            lcall ?Display_BCD
-052D D000       351            pop ar0 ;this is just in case temperatures exceed 100C and we're in deg F
-052F C000       352            push ar0
-0531 A83A       352            mov r0, bcd+2
-0533 120112     352            lcall ?Display_BCD
-0536 D000       352            pop ar0
-0538            353   
-0538            354            ;Set_Cursor(1, 13)
-0538            355            ;Send_Constant_String(#22) ; display Tj=22
-0538 22         356            ret
-0539            357   
-0539            358   
-0539            359   ;-------------------------------------------------;
-0539            360   ; Display all values and temperatures to the LCD  ;
-0539            361   ;-------------------------------------------------;
-0539            362   Display_Data:
-0539 C2EF       363            clr ADCF
-053B D2EE       364            setb ADCS ;  ADC start trigger signal
-053D 30EFFD     365       jnb ADCF, $ ; Wait for conversion complete
-0540            366       
-0540            367       ; Read the ADC result and store in [R1, R0]
-0540 E5C3       368       mov a, ADCRH   
-0542 C4         369       swap a
-0543 C0E0       370       push acc
-0545 540F       371       anl a, #0x0f
-0547 F9         372       mov R1, a
-0548 D0E0       373       pop acc
-054A 54F0       374       anl a, #0xf0
-054C 45C2       375       orl a, ADCRL
-054E F8         376       mov R0, A
-054F            377       
-054F            378       ; Convert to voltage
-054F 8830       379            mov x+0, R0
-0551 8931       380            mov x+1, R1
-0553            381            ; Pad other bits with zero
-0553 753200     382            mov x+2, #0
-0556 753300     383            mov x+3, #0
-0559            384            
-0559            385            ;lcall div32 ; Get V_out
-0559            386            ; ; Calculate Temp based on V_out
-0559            387            ; Load_y(27300) ; The reference temp K
-0559            388            ; lcall sub32 ; Get Temp*0.01
-0559            389            ; ; Change Temp*0.01 to Temp
-0559            390            ; Load_y(100)
-0559            391            ; lcall mul32
-0559            392   
-0559 75347C     393            mov y+0, #low (50300 % 0x10000) 
-055C 7535C4     393            mov y+1, #high(50300 % 0x10000) 
-055F 753600     393            mov y+2, #low (50300 / 0x10000) 
-0562 753700     393            mov y+3, #high(50300 / 0x10000)  ; VCC voltage measured (equals 4.99V)
-0565 1202B8     394            lcall mul32 ;multiplying ADC * Vref
-0568 7534FF     395            mov y+0, #low (4095 % 0x10000) 
-056B 75350F     395            mov y+1, #high(4095 % 0x10000) 
-056E 753600     395            mov y+2, #low (4095 / 0x10000) 
-0571 753700     395            mov y+3, #high(4095 / 0x10000)  ; 2^12-1
-0574 120345     396            lcall div32 ;now doing (ADC*Vref)/(4095)
-0577            397            
-0577 7534E8     398            mov y+0, #low (1000 % 0x10000) 
-057A 753503     398            mov y+1, #high(1000 % 0x10000) 
-057D 753600     398            mov y+2, #low (1000 / 0x10000) 
-0580 753700     398            mov y+3, #high(1000 / 0x10000)  ; for converting volt to microvolt
-0583 1202B8     399            lcall mul32 ;multiplying volts
-0586            400            
-0586 75340A     401            mov y+0, #low (10 % 0x10000) 
-0589 753500     401            mov y+1, #high(10 % 0x10000) 
-058C 753600     401            mov y+2, #low (10 / 0x10000) 
-058F 753700     401            mov y+3, #high(10 / 0x10000) 
-0592 1202B8     402            lcall mul32
-0595            403            
-0595            404            ;convert to temperature
-0595 7534CC     405            mov y+0, #low (23500 % 0x10000) 
-0598 75355B     405            mov y+1, #high(23500 % 0x10000) 
-059B 753600     405            mov y+2, #low (23500 / 0x10000) 
-059E 753700     405            mov y+3, #high(23500 / 0x10000)  ;divide by the gain 
-05A1 120345     406            lcall div32 
-05A4 753429     407            mov y+0, #low (41 % 0x10000) 
-05A7 753500     407            mov y+1, #high(41 % 0x10000) 
-05AA 753600     407            mov y+2, #low (41 / 0x10000) 
-05AD 753700     407            mov y+3, #high(41 / 0x10000) ;load y = 41
-05B0 120345     408            lcall div32 ;divide by 41
-05B3            409            
-05B3 753410     410            mov y+0, #low (10000 % 0x10000) 
-05B6 753527     410            mov y+1, #high(10000 % 0x10000) 
-05B9 753600     410            mov y+2, #low (10000 / 0x10000) 
-05BC 753700     410            mov y+3, #high(10000 / 0x10000) 
-05BF 1202B8     411            lcall mul32
-05C2            412            
-05C2 753460     413            mov y+0, #low (220000 % 0x10000) 
-05C5 75355B     413            mov y+1, #high(220000 % 0x10000) 
-05C8 753603     413            mov y+2, #low (220000 / 0x10000) 
-05CB 753700     413            mov y+3, #high(220000 / 0x10000)  ;cold junction 19 deg C
-05CE 120203     414            lcall add32
-05D1            415   
-05D1            416   ; Convert to BCD and display
-05D1 12013E     417            lcall hex2bcd
-05D4 120513     418            lcall Display_formated_BCD
-05D7            419            
-05D7            420            ;send the BCD value to the MATLAB script
-05D7 C000       421            push ar0
-05D9 A83B       421            mov r0, bcd+3
-05DB 120128     421            lcall ?Send_BCD
-05DE D000       421            pop ar0
-05E0 C000       422            push ar0
-05E2 A83A       422            mov r0, bcd+2
-05E4 120128     422            lcall ?Send_BCD
-05E7 D000       422            pop ar0
-05E9 C000       423            push ar0
-05EB A839       423            mov r0, bcd+1
-05ED 120128     423            lcall ?Send_BCD
-05F0 D000       423            pop ar0
-05F2 C000       424            push ar0
-05F4 A838       424            mov r0, bcd
-05F6 120128     424            lcall ?Send_BCD
-05F9 D000       424            pop ar0
-05FB 740D       425            mov a, #'\r'
-05FD 12045E     426            lcall putchar
-0600 740A       427            mov a, #'\n'
-0602 12045E     428            lcall putchar
-0605            429            
-0605            430            ; Wait 500 ms between conversions
-0605 7AFA       431            mov R2, #250
-0607 120476     432            lcall waitms
-060A 7AFA       433            mov R2, #250
-060C 120476     434            lcall waitms
-060F            435   
-060F 32         436            reti
-0610            437   
-0610            438   main:
-0610 75817F     439            mov sp, #0x7f
-0613 120414     440            lcall Init_All
-0616 1200CD     441       lcall LCD_4BIT
-0619 1203AE     442       lcall Timer0_Init
-061C 1203D1     443       lcall Timer2_Init
-061F D2AF       444       setb EA   ; Enable Global interrupts
-0621            445       ; initial messages in LCD
-0621 C0E0       446            push acc
-0623 7401       446            mov a, #1
-0625 14         446            dec a
-0626 12010D     446            lcall ?Set_Cursor_1 ; Select column and row
-0629 D0E0       446            pop acc
-062B C083       447            push dph
-062D C082       447            push dpl
-062F C0E0       447            push acc
-0631 900003     447            mov dptr, #To_Message
-0634 120100     447            lcall ?Send_Constant_String
-0637 D0E0       447            pop acc
-0639 D082       447            pop dpl
-063B D083       447            pop dph
-063D C0E0       448            push acc
-063F 7401       448            mov a, #1
-0641 14         448            dec a
-0642 12010B     448            lcall ?Set_Cursor_2 ; Select column and row
-0645 D0E0       448            pop acc
-0647 C083       449            push dph
-0649 C082       449            push dpl
-064B C0E0       449            push acc
-064D 900014     449            mov dptr, #Time_temp_display
-0650 120100     449            lcall ?Send_Constant_String
-0653 D0E0       449            pop acc
-0655 D082       449            pop dpl
-0657 D083       449            pop dph
-0659            450            
-0659 753F00     451            mov seconds, #0x00
-065C 7545E0     452            mov soak_temp, #0xE0 
-065F 754460     453            mov soak_time, #0x60
-0662 7543E6     454            mov reflow_temp, #0xE6 ; 230
-0665 754230     455            mov reflow_time, #0x30
-0668 D2CA       456            setb TR2
-066A            457       
-066A            458   ;---------------------------------;
-066A            459   ;                FSM     funtion                               ;
-066A            460   ;---------------------------------;
-066A            461   FSM:
-066A E54B       462       mov a, FSM_state
-066C            463   FSM_state0:
-066C B4000F     464       cjne a, #0, FSM_state1
-066F 754700     465       mov pwm, #0 ; power variable
-0672            466   
-0672 300706     467       jnb start_stop_flag, FSM_state0_done
-0675 753F00     468       mov seconds, #0     ; set time to 0
-0678 754B01     469       mov FSM_state, #1   ; set FSM_state to 1, next state is state1
-067B            470   FSM_state0_done:
-067B 02066A     471       ljmp FSM    ;jump back to FSM and reload FSM_state to a
-067E            472   
-067E            473   FSM_state1:
-067E B40154     474       cjne a, #1, FSM_state2
-0681 754764     475       mov pwm, #100
-0684 C0E0       476            push acc
-0686 7401       476            mov a, #1
-0688 14         476            dec a
-0689 12010B     476            lcall ?Set_Cursor_2 ; Select column and row
-068C D0E0       476            pop acc
-068E C083       477            push dph
-0690 C082       477            push dpl
-0692 C0E0       477            push acc
-0694 900025     477            mov dptr, #Ramp_to_soak
-0697 120100     477            lcall ?Send_Constant_String
-069A D0E0       477            pop acc
-069C D082       477            pop dpl
-069E D083       477            pop dph
-06A0 C3         478       clr c
-06A1 300725     479       jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
-06A4 7460       480       mov a, #0x60
-06A6 953F       481       subb a, seconds
-06A8 4013       482       jc abort
-06AA            483   continue:
-06AA C3         484       clr c   ; ! i don't know what is c
-06AB E545       485       mov a, soak_temp    ; set a to soak temp
-06AD 853848     486            mov temp, bcd
-06B0 9548       487       subb a, temp    ; temp is our currect temp
-06B2 5006       488       jnc FSM_state1_done
-06B4 753F00     489       mov seconds, #0     ; set time to 0
-06B7 754B02     490       mov FSM_state, #2
-06BA            491   FSM_state1_done:
-06BA 02066A     492       ljmp FSM
-06BD            493   abort:
-06BD 7432       494       mov a, #50  ; set a to 50 degree
-06BF 853848     495            mov temp, bcd
-06C2 9548       496       subb a, temp
-06C4 40E4       497       jc continue     ; if temp is larger then 50 degree, go back to continue
-06C6 754B00     498       mov FSM_state, #0   ; abort the FSM
-06C9            499   
-06C9            500   stop_state:
-06C9 C2CA       501       clr TR2
-06CB 300705     502       jnb start_stop_flag, stop
-06CE D2CA       503            setb TR2
-06D0 02066A     504            ljmp FSM
-06D3            505   
-06D3            506   stop:
-06D3 80F4       507       sjmp stop_state
-06D5            508   
-06D5            509   FSM_state2:
-06D5 B40232     510       cjne a, #2, FSM_state3
-06D8 754714     511       mov pwm, #20
-06DB E544       512       mov a, soak_time    ; set a to soak time
-06DD C0E0       513            push acc
-06DF 7401       513            mov a, #1
-06E1 14         513            dec a
-06E2 12010B     513            lcall ?Set_Cursor_2 ; Select column and row
-06E5 D0E0       513            pop acc
-06E7 C083       514            push dph
-06E9 C082       514            push dpl
-06EB C0E0       514            push acc
-06ED 900036     514            mov dptr, #Soak_display
-06F0 120100     514            lcall ?Send_Constant_String
-06F3 D0E0       514            pop acc
-06F5 D082       514            pop dpl
-06F7 D083       514            pop dph
-06F9 C3         515       clr c   ; ! i don't know what is c 
-06FA 3007CC     516       jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
-06FD 953F       517       subb a, seconds    ; temp is our currect sec
-06FF 5006       518       jnc FSM_state2_done
-0701 753F00     519       mov seconds, #0     ; set time to 0
-0704 754B03     520       mov FSM_state, #3
-0707            521   FSM_state2_done:
-0707 02066A     522       ljmp FSM
-070A            523   
-070A            524   FSM_state3:
-070A B4033B     525       cjne a, #3, FSM_state4
-070D 754764     526       mov pwm, #100
-0710 E543       527       mov a, reflow_temp    ; set a to reflow temp
-0712 C0E0       528            push acc
-0714 7401       528            mov a, #1
-0716 14         528            dec a
-0717 12010B     528            lcall ?Set_Cursor_2 ; Select column and row
-071A D0E0       528            pop acc
-071C C083       529            push dph
-071E C082       529            push dpl
-0720 C0E0       529            push acc
-0722 900044     529            mov dptr, #Ramp_to_peak
-0725 120100     529            lcall ?Send_Constant_String
-0728 D0E0       529            pop acc
-072A D082       529            pop dpl
-072C D083       529            pop dph
-072E C3         530       clr c   ; ! i don't know what is c 
-072F 300797     531       jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
-0732 853848     532            mov temp, bcd
-0735 9548       533       subb a, temp    ; temp is our currect temp
-0737 5006       534       jnc FSM_state3_done
-0739 753F00     535       mov seconds, #0     ; set time to 0
-073C 754B04     536       mov FSM_state, #4
-073F            537   FSM_state3_done:
-073F 02066A     538       ljmp FSM
-0742            539            
-0742            540   intermediate_state_0:
-0742 02066C     541            ljmp FSM_state0
-0745            542   
-0745            543   intermediate_stop_jump:
-0745 0206C9     544            ljmp stop_state
-0748            545   
-0748            546   FSM_state4:
-0748 B40432     547       cjne a, #4, FSM_state5
-074B 754714     548       mov pwm, #20
-074E E542       549       mov a, reflow_time    ; set a to reflow time
-0750 C0E0       550            push acc
-0752 7401       550            mov a, #1
-0754 14         550            dec a
-0755 12010B     550            lcall ?Set_Cursor_2 ; Select column and row
-0758 D0E0       550            pop acc
-075A C083       551            push dph
-075C C082       551            push dpl
-075E C0E0       551            push acc
-0760 900055     551            mov dptr, #Reflow_display
-0763 120100     551            lcall ?Send_Constant_String
-0766 D0E0       551            pop acc
-0768 D082       551            pop dpl
-076A D083       551            pop dph
-076C C3         552       clr c   ; ! i don't know what is c 
-076D 3007D5     553       jnb start_stop_flag, intermediate_stop_jump; checks the flag if 0, then means stop was pressed, if 1 keep on going
-0770 953F       554       subb a, seconds    ; temp is our currect sec
-0772 5006       555       jnc FSM_state4_done
-0774 753F00     556       mov seconds, #0     ; set time to 0
-0777 754B05     557       mov FSM_state, #5
-077A            558   FSM_state4_done:
-077A 02066A     559       ljmp FSM
-077D            560   
-077D            561   FSM_state5:
-077D B405C2     562       cjne a, #5, intermediate_state_0
-0780 754700     563       mov pwm, #0
-0783 743C       564       mov a, #60    ; set a to 60
-0785 C0E0       565            push acc
-0787 7401       565            mov a, #1
-0789 14         565            dec a
-078A 12010B     565            lcall ?Set_Cursor_2 ; Select column and row
-078D D0E0       565            pop acc
-078F C083       566            push dph
-0791 C082       566            push dpl
-0793 C0E0       566            push acc
-0795 900064     566            mov dptr, #Cooling_display
-0798 120100     566            lcall ?Send_Constant_String
-079B D0E0       566            pop acc
-079D D082       566            pop dpl
-079F D083       566            pop dph
-07A1 C3         567       clr c   ; ! i don't know what is c
-07A2 3007A0     568       jnb start_stop_flag, intermediate_stop_jump ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
-07A5 853848     569       mov temp, bcd
-07A8 9548       570            subb a, temp    ; temp is our currect temp, need to be edit
-07AA 5006       571       jnc FSM_state5_done
-07AC 753F00     572       mov seconds, #0     ; set time to 0
-07AF 754B00     573       mov FSM_state, #0
-07B2            574   FSM_state5_done:
-07B2 02066A     575       ljmp FSM
-07B5            576   EN
+03B6            103   
+03B6            104   ;---------------------------------;
+03B6            105   ; Routine to initialize the ISR   ;
+03B6            106   ; for timer 0                     ;
+03B6            107   ;---------------------------------;
+03B6            108   Timer0_Init:
+03B6 438E08     109            orl CKCON, #0b00001000 ; Input for timer 0 is sysclk/1
+03B9 E589       110            mov a, TMOD
+03BB 54F0       111            anl a, #0xf0 ; 11110000 Clear the bits for timer 0
+03BD 4401       112            orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
+03BF F589       113            mov TMOD, a
+03C1 758CF0     114            mov TH0, #high(TIMER0_RELOAD)
+03C4 758A2C     115            mov TL0, #low(TIMER0_RELOAD)
+03C7            116            ; Enable the timer and interrupts
+03C7 D2A9       117       setb ET0  ; Enable timer 0 interrupt
+03C9 D28C       118       setb TR0  ; Start timer 0
+03CB 22         119            ret
+03CC            120   
+03CC            121   ;---------------------------------;
+03CC            122   ; ISR for timer 0.  Set to execute;
+03CC            123   ; every 1/4096Hz to generate a    ;
+03CC            124   ; 2048 Hz wave at pin SOUND_OUT   ;
+03CC            125   ;---------------------------------;
+03CC            126   Timer0_ISR:
+03CC            127            ;clr TF0  ; According to the data sheet this is done for us already.
+03CC            128            ; Timer 0 doesn't have 16-bit auto-reload, so
+03CC C28C       129            clr TR0
+03CE 758CF0     130            mov TH0, #high(TIMER0_RELOAD)
+03D1 758A2C     131            mov TL0, #low(TIMER0_RELOAD)
+03D4 D28C       132            setb TR0
+03D6 B297       133            cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
+03D8 32         134            reti
+03D9            135   
+03D9            136   ;---------------------------------;
+03D9            137   ; Routine to initialize the ISR   ;
+03D9            138   ; for timer 2                     ;
+03D9            139   ;---------------------------------;
+03D9            140   Timer2_Init:
+03D9 75C800     141            mov T2CON, #0 ; Stop timer/counter.  Autoreload mode.
+03DC 75CDBF     142            mov TH2, #high(TIMER2_RELOAD)
+03DF 75CC28     143            mov TL2, #low(TIMER2_RELOAD)
+03E2            144            ; Set the reload value
+03E2 43C980     145            orl T2MOD, #0x80 ; Enable timer 2 autoreload
+03E5 75CBBF     146            mov RCMP2H, #high(TIMER2_RELOAD)
+03E8 75CA28     147            mov RCMP2L, #low(TIMER2_RELOAD)
+03EB            148            ; Init One millisecond interrupt counter.  It is a 16-bit variable made with two 8-bit parts
+03EB E4         149            clr a
+03EC F53D       150            mov Count1ms+0, a
+03EE F53E       151            mov Count1ms+1, a
+03F0 754700     152            mov pwm, #0
+03F3            153            ; Enable the timer and interrupts
+03F3 439B80     154            orl EIE, #0x80 ; Enable timer 2 interrupt ET2=1
+03F6 D2CA       155       setb TR2  ; Enable timer 2
+03F8 22         156            ret
+03F9            157   
+03F9            158   ;---------------------------------;
+03F9            159   ; ISR for timer 2 ;
+03F9            160   ;---------------------------------;
+03F9            161   Timer2_ISR:
+03F9 C2CF       162            clr TF2 ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR. It is bit addressable.
+03FB B284       163            cpl P0.4 ; To check the interrupt rate with oscilloscope. It must be precisely a 1 ms pulse.
+03FD            164                    
+03FD            165            ; The two registers used in the ISR must be saved in the stack
+03FD C0D0       166            push psw
+03FF C0E0       167            push acc
+0401 0546       168            inc pwm_counter
+0403 C3         169            clr c
+0404 E547       170            mov a, pwm
+0406 9546       171            subb a, pwm_counter ; If pwm_counter <= pwm then c=1
+0408 B3         172            cpl c
+0409 9290       173            mov PWM_OUT, c
+040B E546       174            mov a, pwm_counter
+040D B46407     175            cjne a, #100, Timer2_ISR_done
+0410 754600     176            mov pwm_counter, #0
+0413 053F       177            inc seconds ; It is super easy to keep a seconds count here
+0415 D201       178            setb s_flag
+0417            179   
+0417            180   Timer2_ISR_done:
+0417 D0E0       181            pop acc
+0419 D0D0       182            pop psw
+041B 32         183            reti
+041C            184   
+041C            185   ;---------------------------------;
+041C            186   ; Temperature senseor function    ;
+041C            187   ;---------------------------------;
+041C            188   Init_All:
+041C            189            ; Configure all the pins for biderectional I/O
+041C 75AC00     190            mov     P3M1, #0x00
+041F 75AD00     191            mov     P3M2, #0x00
+0422 75B300     192            mov     P1M1, #0x00
+0425 75B400     193            mov     P1M2, #0x00
+0428 75B100     194            mov     P0M1, #0x00
+042B 75B200     195            mov     P0M2, #0x00
+042E            196            
+042E 438E10     197            orl     CKCON, #0x10 ; CLK is the input for timer 1
+0431 438780     198            orl     PCON, #0x80 ; Bit SMOD=1, double baud rate
+0434 759852     199            mov     SCON, #0x52
+0437 53C4DF     200            anl     T3CON, #0b11011111
+043A 53890F     201            anl     TMOD, #0x0F ; Clear the configuration bits for timer 1
+043D 438920     202            orl     TMOD, #0x20 ; Timer 1 Mode 2
+0440 758DF7     203            mov     TH1, #TIMER1_RELOAD ; TH1=TIMER1_RELOAD;
+0443 D28E       204            setb TR1
+0445            205            
+0445            206            ; Using timer 0 for delay functions.  Initialize here:
+0445 C28C       207            clr     TR0 ; Stop timer 0
+0447 438E08     208            orl     CKCON,#0x08 ; CLK is the input for timer 0
+044A 5389F0     209            anl     TMOD,#0xF0 ; Clear the configuration bits for timer 0
+044D 438901     210            orl     TMOD,#0x01 ; Timer 0 in Mode 1: 16-bit timer
+0450            211            
+0450            212            ; Initialize the pins used by the ADC (P1.1, P1.7) as input.
+0450 43B382     213            orl     P1M1, #0b10000010
+0453 53B47D     214            anl     P1M2, #0b01111101
+0456            215            
+0456            216            ; Initialize and start the ADC:
+0456 53E8F0     217            anl ADCCON0, #0xF0
+0459 43E807     218            orl ADCCON0, #0x07 ; Select channel 7
+045C            219            ; AINDIDS select if some pins are analog inputs or digital I/O:
+045C 75F600     220            mov AINDIDS, #0x00 ; Disable all analog inputs
+045F 43F681     221            orl AINDIDS, #0b10000001 ; Activate AIN0 and AIN7 analog inputs
+0462 43E101     222            orl ADCCON1, #0x01 ; Enable ADC
+0465            223            
+0465 22         224            ret
+0466            225   
+0466            226   wait_1ms:
+0466 C28C       227            clr     TR0 ; Stop timer 0
+0468 C28D       228            clr     TF0 ; Clear overflow flag
+046A 758CBF     229            mov     TH0, #high(TIMER0_RELOAD_1MS)
+046D 758A28     230            mov     TL0,#low(TIMER0_RELOAD_1MS)
+0470 D28C       231            setb TR0
+0472 308DFD     232            jnb     TF0, $ ; Wait for overflow
+0475 22         233            ret
+0476            234   
+0476            235   ; Wait the number of miliseconds in R2
+0476            236   waitms:
+0476 120466     237            lcall wait_1ms
+0479 DAFB       238            djnz R2, waitms
+047B 22         239            ret
+047C            240   
+047C            241   ;---------------------------------;
+047C            242   ;         5_pushbuttons function               ;
+047C            243   ;---------------------------------;
+047C            244   LCD_PB:
+047C            245            ; Set variables to 1: 'no push button pressed'
+047C D202       246            setb PB0
+047E D203       247            setb PB1
+0480 D204       248            setb PB2
+0482 D205       249            setb PB3
+0484 D206       250            setb PB4
+0486            251            ; The input pin used to check set to '1'
+0486 D295       252            setb P1.5
+0488            253            
+0488            254            ; Check if any push button is pressed
+0488 C280       255            clr P0.0
+048A C281       256            clr P0.1
+048C C282       257            clr P0.2
+048E C283       258            clr P0.3
+0490 C293       259            clr P1.3
+0492 209549     260            jb P1.5, LCD_PB_Done
+0495            261   
+0495            262            ; Debounce
+0495 7A32       263            mov R2, #50
+0497 120476     264            lcall waitms
+049A 209541     265            jb P1.5, LCD_PB_Done
+049D            266   
+049D            267            ; Set the LCD data pins to logic 1
+049D D280       268            setb P0.0
+049F D281       269            setb P0.1
+04A1 D282       270            setb P0.2
+04A3 D283       271            setb P0.3
+04A5 D293       272            setb P1.3
+04A7            273            
+04A7            274            ; Check the push buttons one by one
+04A7 C293       275            clr P1.3
+04A9 A295       276            mov c, P1.5
+04AB 9206       277            mov PB4, c
+04AD D293       278            setb P1.3
+04AF 30062D     279            jnb PB4,increment_soak_temp
+04B2            280   
+04B2 C280       281            clr P0.0
+04B4 A295       282            mov c, P1.5
+04B6 9205       283            mov PB3, c
+04B8 D280       284            setb P0.0
+04BA 30052E     285            jnb PB3, increment_soak_time
+04BD            286            
+04BD C281       287            clr P0.1
+04BF A295       288            mov c, P1.5
+04C1 9204       289            mov PB2, c
+04C3 D281       290            setb P0.1
+04C5 30042F     291            jnb PB2, increment_reflow_temp
+04C8            292            
+04C8 C282       293            clr P0.2
+04CA A295       294            mov c, P1.5
+04CC 9203       295            mov PB1, c
+04CE D282       296            setb P0.2
+04D0 300330     297            jnb PB1, increment_reflow_time
+04D3            298            
+04D3 C283       299            clr P0.3
+04D5 A295       300            mov c, P1.5
+04D7 9202       301            mov PB0, c
+04D9 D283       302            setb P0.3
+04DB 300231     303            jnb PB0, start_stop
+04DE            304   
+04DE            305   
+04DE            306   LCD_PB_Done:             
+04DE 22         307            ret
+04DF            308   
+04DF            309   increment_soak_temp:
+04DF 0545       310            inc soak_temp
+04E1 E545       311            mov a, soak_temp
+04E3 B4F0F8     312            cjne a, #240, LCD_PB_Done
+04E6 754500     313            mov soak_temp, #0x00
+04E9 80F3       314            sjmp LCD_PB_Done
+04EB            315   increment_soak_time:
+04EB 0544       316            inc soak_time
+04ED E544       317            mov a, soak_time
+04EF B478EC     318            cjne a, #120, LCD_PB_Done
+04F2 754400     319            mov soak_time, #0x00
+04F5 80E7       320            sjmp LCD_PB_Done
+04F7            321   increment_reflow_temp: 
+04F7 0543       322            inc reflow_temp
+04F9 E543       323            mov a, reflow_temp
+04FB B4F0E0     324            cjne a, #240, LCD_PB_Done
+04FE 754300     325            mov reflow_temp, #0x00
+0501 80DB       326            sjmp LCD_PB_Done
+0503            327   increment_reflow_time:
+0503 0542       328            inc reflow_time
+0505 E542       329            mov a, reflow_time
+0507 B44BD4     330            cjne a, #75, LCD_PB_Done
+050A 754200     331            mov reflow_time, #0x00
+050D 80CF       332            sjmp LCD_PB_Done
+050F            333   
+050F            334   start_stop:
+050F B207       335            cpl start_stop_flag
+0511 80CB       336            sjmp LCD_PB_Done
+0513            337   
+0513            338   
+0513            339   ; We can display a number any way we want.  In this case with
+0513            340   ; four decimal places.
+0513            341   Display_formated_BCD:
+0513 C0E0       342            push acc
+0515 7404       342            mov a, #4
+0517 14         342            dec a
+0518 12010D     342            lcall ?Set_Cursor_1 ; Select column and row
+051B D0E0       342            pop acc ; display To
+051D C000       343            push ar0
+051F A83C       343            mov r0, bcd+4
+0521 120112     343            lcall ?Display_BCD
+0524 D000       343            pop ar0
+0526 C000       344            push ar0
+0528 A83B       344            mov r0, bcd+3
+052A 120112     344            lcall ?Display_BCD
+052D D000       344            pop ar0 ;this is just in case temperatures exceed 100C and we're in deg F
+052F C000       345            push ar0
+0531 A83A       345            mov r0, bcd+2
+0533 120112     345            lcall ?Display_BCD
+0536 D000       345            pop ar0
+0538            346   
+0538            347            ;Set_Cursor(1, 13)
+0538            348            ;Send_Constant_String(#22) ; display Tj=22
+0538 22         349            ret
+0539            350   
+0539            351   
+0539            352   ;-------------------------------------------------;
+0539            353   ; Display all values and temperatures to the LCD  ;
+0539            354   ;-------------------------------------------------;
+0539            355   Display_Data:
+0539 C2EF       356            clr ADCF
+053B D2EE       357            setb ADCS ;  ADC start trigger signal
+053D 30EFFD     358       jnb ADCF, $ ; Wait for conversion complete
+0540            359       
+0540            360       ; Read the ADC result and store in [R1, R0]
+0540 E5C3       361       mov a, ADCRH   
+0542 C4         362       swap a
+0543 C0E0       363       push acc
+0545 540F       364       anl a, #0x0f
+0547 F9         365       mov R1, a
+0548 D0E0       366       pop acc
+054A 54F0       367       anl a, #0xf0
+054C 45C2       368       orl a, ADCRL
+054E F8         369       mov R0, A
+054F            370       
+054F            371       ; Convert to voltage
+054F 8830       372            mov x+0, R0
+0551 8931       373            mov x+1, R1
+0553            374            ; Pad other bits with zero
+0553 753200     375            mov x+2, #0
+0556 753300     376            mov x+3, #0
+0559            377            
+0559            378            ;lcall div32 ; Get V_out
+0559            379            ; ; Calculate Temp based on V_out
+0559            380            ; Load_y(27300) ; The reference temp K
+0559            381            ; lcall sub32 ; Get Temp*0.01
+0559            382            ; ; Change Temp*0.01 to Temp
+0559            383            ; Load_y(100)
+0559            384            ; lcall mul32
+0559            385   
+0559 75347C     386            mov y+0, #low (50300 % 0x10000) 
+055C 7535C4     386            mov y+1, #high(50300 % 0x10000) 
+055F 753600     386            mov y+2, #low (50300 / 0x10000) 
+0562 753700     386            mov y+3, #high(50300 / 0x10000)  ; VCC voltage measured (equals 4.99V)
+0565 1202C0     387            lcall mul32 ;multiplying ADC * Vref
+0568 7534FF     388            mov y+0, #low (4095 % 0x10000) 
+056B 75350F     388            mov y+1, #high(4095 % 0x10000) 
+056E 753600     388            mov y+2, #low (4095 / 0x10000) 
+0571 753700     388            mov y+3, #high(4095 / 0x10000)  ; 2^12-1
+0574 12034D     389            lcall div32 ;now doing (ADC*Vref)/(4095)
+0577            390            
+0577 7534E8     391            mov y+0, #low (1000 % 0x10000) 
+057A 753503     391            mov y+1, #high(1000 % 0x10000) 
+057D 753600     391            mov y+2, #low (1000 / 0x10000) 
+0580 753700     391            mov y+3, #high(1000 / 0x10000)  ; for converting volt to microvolt
+0583 1202C0     392            lcall mul32 ;multiplying volts
+0586            393            
+0586 75340A     394            mov y+0, #low (10 % 0x10000) 
+0589 753500     394            mov y+1, #high(10 % 0x10000) 
+058C 753600     394            mov y+2, #low (10 / 0x10000) 
+058F 753700     394            mov y+3, #high(10 / 0x10000) 
+0592 1202C0     395            lcall mul32
+0595            396            
+0595            397            ;convert to temperature
+0595 7534CC     398            mov y+0, #low (23500 % 0x10000) 
+0598 75355B     398            mov y+1, #high(23500 % 0x10000) 
+059B 753600     398            mov y+2, #low (23500 / 0x10000) 
+059E 753700     398            mov y+3, #high(23500 / 0x10000)  ;divide by the gain 
+05A1 12034D     399            lcall div32 
+05A4 753429     400            mov y+0, #low (41 % 0x10000) 
+05A7 753500     400            mov y+1, #high(41 % 0x10000) 
+05AA 753600     400            mov y+2, #low (41 / 0x10000) 
+05AD 753700     400            mov y+3, #high(41 / 0x10000) ;load y = 41
+05B0 12034D     401            lcall div32 ;divide by 41
+05B3            402            
+05B3 753410     403            mov y+0, #low (10000 % 0x10000) 
+05B6 753527     403            mov y+1, #high(10000 % 0x10000) 
+05B9 753600     403            mov y+2, #low (10000 / 0x10000) 
+05BC 753700     403            mov y+3, #high(10000 / 0x10000) 
+05BF 1202C0     404            lcall mul32
+05C2            405            
+05C2 753460     406            mov y+0, #low (220000 % 0x10000) 
+05C5 75355B     406            mov y+1, #high(220000 % 0x10000) 
+05C8 753603     406            mov y+2, #low (220000 / 0x10000) 
+05CB 753700     406            mov y+3, #high(220000 / 0x10000)  ;cold junction 19 deg C
+05CE 12020B     407            lcall add32
+05D1            408   
+05D1            409   ; Convert to BCD and display
+05D1 120146     410            lcall hex2bcd
+05D4 120513     411            lcall Display_formated_BCD
+05D7            412            
+05D7            413            ;send the BCD value to the MATLAB script
+05D7 C000       414            push ar0
+05D9 A83B       414            mov r0, bcd+3
+05DB 120130     414            lcall ?Send_BCD
+05DE D000       414            pop ar0
+05E0 C000       415            push ar0
+05E2 A83A       415            mov r0, bcd+2
+05E4 120130     415            lcall ?Send_BCD
+05E7 D000       415            pop ar0
+05E9 C000       416            push ar0
+05EB A839       416            mov r0, bcd+1
+05ED 120130     416            lcall ?Send_BCD
+05F0 D000       416            pop ar0
+05F2 C000       417            push ar0
+05F4 A838       417            mov r0, bcd
+05F6 120130     417            lcall ?Send_BCD
+05F9 D000       417            pop ar0
+05FB 740D       418            mov a, #'\r'
+05FD 120128     419            lcall putchar
+0600 740A       420            mov a, #'\n'
+0602 120128     421            lcall putchar
+0605            422            
+0605            423            ; Wait 500 ms between conversions
+0605 7AFA       424            mov R2, #250
+0607 120476     425            lcall waitms
+060A 7AFA       426            mov R2, #250
+060C 120476     427            lcall waitms
+060F            428   
+060F 32         429            reti
+0610            430   
+0610            431   main:
+0610 75817F     432            mov sp, #0x7f
+0613 12041C     433            lcall Init_All
+0616 1200CD     434       lcall LCD_4BIT
+0619 1203B6     435       lcall Timer0_Init
+061C 1203D9     436       lcall Timer2_Init
+061F D2AF       437       setb EA   ; Enable Global interrupts
+0621            438       ; initial messages in LCD
+0621 C0E0       439            push acc
+0623 7401       439            mov a, #1
+0625 14         439            dec a
+0626 12010D     439            lcall ?Set_Cursor_1 ; Select column and row
+0629 D0E0       439            pop acc
+062B C083       440            push dph
+062D C082       440            push dpl
+062F C0E0       440            push acc
+0631 900003     440            mov dptr, #To_Message
+0634 120100     440            lcall ?Send_Constant_String
+0637 D0E0       440            pop acc
+0639 D082       440            pop dpl
+063B D083       440            pop dph
+063D C0E0       441            push acc
+063F 7401       441            mov a, #1
+0641 14         441            dec a
+0642 12010B     441            lcall ?Set_Cursor_2 ; Select column and row
+0645 D0E0       441            pop acc
+0647 C083       442            push dph
+0649 C082       442            push dpl
+064B C0E0       442            push acc
+064D 900014     442            mov dptr, #Time_temp_display
+0650 120100     442            lcall ?Send_Constant_String
+0653 D0E0       442            pop acc
+0655 D082       442            pop dpl
+0657 D083       442            pop dph
+0659            443            
+0659 753F00     444            mov seconds, #0x00
+065C 7545E0     445            mov soak_temp, #0xE0 
+065F 754460     446            mov soak_time, #0x60
+0662 7543E6     447            mov reflow_temp, #0xE6 ; 230
+0665 754230     448            mov reflow_time, #0x30
+0668 D2CA       449            setb TR2
+066A            450       
+066A            451   ;---------------------------------;
+066A            452   ;                FSM     funtion                               ;
+066A            453   ;---------------------------------;
+066A            454   FSM:
+066A E54B       455       mov a, FSM_state
+066C            456   FSM_state0:
+066C B4000F     457       cjne a, #0, FSM_state1
+066F 754700     458       mov pwm, #0 ; power variable
+0672            459   
+0672 300706     460       jnb start_stop_flag, FSM_state0_done
+0675 753F00     461       mov seconds, #0     ; set time to 0
+0678 754B01     462       mov FSM_state, #1   ; set FSM_state to 1, next state is state1
+067B            463   FSM_state0_done:
+067B 02066A     464       ljmp FSM    ;jump back to FSM and reload FSM_state to a
+067E            465   
+067E            466   FSM_state1:
+067E B40154     467       cjne a, #1, FSM_state2
+0681 754764     468       mov pwm, #100
+0684 C0E0       469            push acc
+0686 7401       469            mov a, #1
+0688 14         469            dec a
+0689 12010B     469            lcall ?Set_Cursor_2 ; Select column and row
+068C D0E0       469            pop acc
+068E C083       470            push dph
+0690 C082       470            push dpl
+0692 C0E0       470            push acc
+0694 900025     470            mov dptr, #Ramp_to_soak
+0697 120100     470            lcall ?Send_Constant_String
+069A D0E0       470            pop acc
+069C D082       470            pop dpl
+069E D083       470            pop dph
+06A0 C3         471       clr c
+06A1 300725     472       jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+06A4 7460       473       mov a, #0x60
+06A6 953F       474       subb a, seconds
+06A8 4013       475       jc abort
+06AA            476   continue:
+06AA C3         477       clr c   ; ! i don't know what is c
+06AB E545       478       mov a, soak_temp    ; set a to soak temp
+06AD 853848     479            mov temp, bcd
+06B0 9548       480       subb a, temp    ; temp is our currect temp
+06B2 5006       481       jnc FSM_state1_done
+06B4 753F00     482       mov seconds, #0     ; set time to 0
+06B7 754B02     483       mov FSM_state, #2
+06BA            484   FSM_state1_done:
+06BA 02066A     485       ljmp FSM
+06BD            486   abort:
+06BD 7432       487       mov a, #50  ; set a to 50 degree
+06BF 853848     488            mov temp, bcd
+06C2 9548       489       subb a, temp
+06C4 40E4       490       jc continue     ; if temp is larger then 50 degree, go back to continue
+06C6 754B00     491       mov FSM_state, #0   ; abort the FSM
+06C9            492   
+06C9            493   stop_state:
+06C9 C2CA       494       clr TR2
+06CB 300705     495       jnb start_stop_flag, stop
+06CE D2CA       496            setb TR2
+06D0 02066A     497            ljmp FSM
+06D3            498   
+06D3            499   stop:
+06D3 80F4       500       sjmp stop_state
+06D5            501   
+06D5            502   FSM_state2:
+06D5 B40232     503       cjne a, #2, FSM_state3
+06D8 754714     504       mov pwm, #20
+06DB E544       505       mov a, soak_time    ; set a to soak time
+06DD C0E0       506            push acc
+06DF 7401       506            mov a, #1
+06E1 14         506            dec a
+06E2 12010B     506            lcall ?Set_Cursor_2 ; Select column and row
+06E5 D0E0       506            pop acc
+06E7 C083       507            push dph
+06E9 C082       507            push dpl
+06EB C0E0       507            push acc
+06ED 900036     507            mov dptr, #Soak_display
+06F0 120100     507            lcall ?Send_Constant_String
+06F3 D0E0       507            pop acc
+06F5 D082       507            pop dpl
+06F7 D083       507            pop dph
+06F9 C3         508       clr c   ; ! i don't know what is c 
+06FA 3007CC     509       jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+06FD 953F       510       subb a, seconds    ; temp is our currect sec
+06FF 5006       511       jnc FSM_state2_done
+0701 753F00     512       mov seconds, #0     ; set time to 0
+0704 754B03     513       mov FSM_state, #3
+0707            514   FSM_state2_done:
+0707 02066A     515       ljmp FSM
+070A            516   
+070A            517   FSM_state3:
+070A B4033B     518       cjne a, #3, FSM_state4
+070D 754764     519       mov pwm, #100
+0710 E543       520       mov a, reflow_temp    ; set a to reflow temp
+0712 C0E0       521            push acc
+0714 7401       521            mov a, #1
+0716 14         521            dec a
+0717 12010B     521            lcall ?Set_Cursor_2 ; Select column and row
+071A D0E0       521            pop acc
+071C C083       522            push dph
+071E C082       522            push dpl
+0720 C0E0       522            push acc
+0722 900044     522            mov dptr, #Ramp_to_peak
+0725 120100     522            lcall ?Send_Constant_String
+0728 D0E0       522            pop acc
+072A D082       522            pop dpl
+072C D083       522            pop dph
+072E C3         523       clr c   ; ! i don't know what is c 
+072F 300797     524       jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+0732 853848     525            mov temp, bcd
+0735 9548       526       subb a, temp    ; temp is our currect temp
+0737 5006       527       jnc FSM_state3_done
+0739 753F00     528       mov seconds, #0     ; set time to 0
+073C 754B04     529       mov FSM_state, #4
+073F            530   FSM_state3_done:
+073F 02066A     531       ljmp FSM
+0742            532            
+0742            533   intermediate_state_0:
+0742 02066C     534            ljmp FSM_state0
+0745            535   
+0745            536   intermediate_stop_jump:
+0745 0206C9     537            ljmp stop_state
+0748            538   
+0748            539   FSM_state4:
+0748 B40432     540       cjne a, #4, FSM_state5
+074B 754714     541       mov pwm, #20
+074E E542       542       mov a, reflow_time    ; set a to reflow time
+0750 C0E0       543            push acc
+0752 7401       543            mov a, #1
+0754 14         543            dec a
+0755 12010B     543            lcall ?Set_Cursor_2 ; Select column and row
+0758 D0E0       543            pop acc
+075A C083       544            push dph
+075C C082       544            push dpl
+075E C0E0       544            push acc
+0760 900055     544            mov dptr, #Reflow_display
+0763 120100     544            lcall ?Send_Constant_String
+0766 D0E0       544            pop acc
+0768 D082       544            pop dpl
+076A D083       544            pop dph
+076C C3         545       clr c   ; ! i don't know what is c 
+076D 3007D5     546       jnb start_stop_flag, intermediate_stop_jump; checks the flag if 0, then means stop was pressed, if 1 keep on going
+0770 953F       547       subb a, seconds    ; temp is our currect sec
+0772 5006       548       jnc FSM_state4_done
+0774 753F00     549       mov seconds, #0     ; set time to 0
+0777 754B05     550       mov FSM_state, #5
+077A            551   FSM_state4_done:
+077A 02066A     552       ljmp FSM
+077D            553   
+077D            554   FSM_state5:
+077D B405C2     555       cjne a, #5, intermediate_state_0
+0780 754700     556       mov pwm, #0
+0783 743C       557       mov a, #60    ; set a to 60
+0785 C0E0       558            push acc
+0787 7401       558            mov a, #1
+0789 14         558            dec a
+078A 12010B     558            lcall ?Set_Cursor_2 ; Select column and row
+078D D0E0       558            pop acc
+078F C083       559            push dph
+0791 C082       559            push dpl
+0793 C0E0       559            push acc
+0795 900064     559            mov dptr, #Cooling_display
+0798 120100     559            lcall ?Send_Constant_String
+079B D0E0       559            pop acc
+079D D082       559            pop dpl
+079F D083       559            pop dph
+07A1 C3         560       clr c   ; ! i don't know what is c
+07A2 3007A0     561       jnb start_stop_flag, intermediate_stop_jump ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
+07A5 853848     562       mov temp, bcd
+07A8 9548       563            subb a, temp    ; temp is our currect temp, need to be edit
+07AA 5006       564       jnc FSM_state5_done
+07AC 753F00     565       mov seconds, #0     ; set time to 0
+07AF 754B00     566       mov FSM_state, #0
+07B2            567   FSM_state5_done:
+07B2 02066A     568       ljmp FSM
+07B5            569   EN
