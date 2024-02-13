@@ -474,9 +474,9 @@ main:
     Send_Constant_String(#Time_temp_display)
 	
 	mov seconds, #0x00
-	mov soak_temp, #0140 
+	mov soak_temp, #0xE0 
 	mov soak_time, #0x60
-	mov reflow_temp, #0230
+	mov reflow_temp, #0x230
 	mov reflow_time, #0x30
 	setb TR2
     
