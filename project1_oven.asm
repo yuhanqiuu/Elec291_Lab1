@@ -439,7 +439,6 @@ Display_Data:
 	lcall add32
 
 ; Convert to BCD and display
-celc:
 	lcall hex2bcd
 	lcall Display_formated_BCD
 	
