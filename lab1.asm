@@ -116,66 +116,226 @@ LCD_byte:
 ; Configure LCD in 4-bit mode     ;
 ;---------------------------------;
 LCD_4BIT:
-clr LCD_E ; Resting state of LCD's enable is zero
-; clr LCD_RW ; Not used, pin tied to GND
-; After power on, wait for the LCD start up time before initializing
-mov R2, #40
-lcall WaitmilliSec
-; First make sure the LCD is in 8-bit mode and then change to 4-bit mode
-mov a, #0x33
-lcall WriteCommand
-mov a, #0x33
-lcall WriteCommand
-mov a, #0x32 ; change to 4-bit mode
-lcall WriteCommand
-; Configure the LCD
-mov a, #0x28
-lcall WriteCommand
-mov a, #0x0c
-lcall WriteCommand
-mov a, #0x01 ; Clear screen command (takes some time)
-lcall WriteCommand
-;Wait for clear screen command to finish. Usually takes 1.52ms.
-mov R2, #2
-lcall WaitmilliSec
-ret
+    clr LCD_E   ; Resting state of LCD's enable is zero
+    ; clr LCD_RW  ; Not used, pin tied to GND
+
+    ; After power on, wait for the LCD start up time before initializing
+    mov R2, #40
+    lcall WaitmilliSec
+
+    ; First make sure the LCD is in 8-bit mode and then change to 4-bit mode
+    mov a, #0x33
+    lcall WriteCommand
+    mov a, #0x33
+    lcall WriteCommand
+    mov a, #0x32 ; change to 4-bit mode
+    lcall WriteCommand
+
+    ; Configure the LCD
+    mov a, #0x28
+    lcall WriteCommand
+    mov a, #0x0c
+    lcall WriteCommand
+    mov a, #0x01 ;  Clear screen command (takes some time)
+    lcall WriteCommand
+
+    ;Wait for clear screen command to finish. Usually takes 1.52ms.
+    mov R2, #2
+    lcall WaitmilliSec
+    ret
+    
+;---------------------------------;
+;Creates a custom character(s)    ;
+;and stores it in CGRAM           ;
+;---------------------------------;
+ customchar:
+ ;a funny face
+ 	mov a, #48H
+ 	lcall WriteCommand
+ 	mov a, #0x0
+ 	lcall WriteData
+ 	mov a, #0xa
+ 	lcall WriteData
+ 	mov a, #0x0
+ 	lcall WriteData
+ 	mov a, #0x10
+ 	lcall WriteData
+ 	mov a, #0x10
+ 	lcall WriteData
+ 	mov a, #0xe
+ 	lcall WriteData
+ 	mov a, #0x0
+ 	lcall WriteData
+ 	mov a, #0x0
+    lcall WriteData 
+    
+;top pillar
+ 	mov a, #50H
+ 	lcall WriteCommand
+ 	mov a, #0x1f
+ 	lcall WriteData
+ 	mov a, #0xa
+ 	lcall WriteData
+ 	mov a, #0xa
+ 	lcall WriteData
+ 	mov a, #0xa
+ 	lcall WriteData
+ 	mov a, #0xa
+ 	lcall WriteData
+ 	mov a, #0xa
+ 	lcall WriteData
+ 	mov a, #0xa
+ 	lcall WriteData
+ 	mov a, #0xa
+    lcall WriteData 
+    
+ ;bottom pillar
+ 	mov a, #58H
+ 	lcall WriteCommand
+ 	mov a, #0xa
+ 	lcall WriteData
+ 	mov a, #0xa
+ 	lcall WriteData
+ 	mov a, #0xa
+ 	lcall WriteData
+ 	mov a, #0xa
+ 	lcall WriteData
+ 	mov a, #0xa
+ 	lcall WriteData
+ 	mov a, #0xe
+ 	lcall WriteData
+ 	mov a, #0x1f
+ 	lcall WriteData
+ 	mov a, #0x0
+ 	lcall WriteData
+ 	
+ 	ret
+ ;custom character code derived from
+ ;https://www.8051projects.net/lcd-interfacing/lcd-custom-character.php
+ 
+ my_name: DB 'Huy Huynh' ,0 
+ disappear: DB '             ',0  
+ student_num: DB '50417435' ,0  
+;---------------------------------;
+; Prints the contents of a string ;
+; onto a line    			      ;
+;---------------------------------;
+PrintString:
+	lcall WaitmilliSec
+    mov     a, r3
+    movc    a, @a+dptr   ; Get character of the string
+    jz      Done         ; Jumps if a==0
+    lcall WriteData
+    inc     r3
+    sjmp    PrintString
+  
+Done:
+    ret
+;string code sample derived from 
+;https://stackoverflow.com/questions/64343538/moving-strings-into-register-with-a-loop-8051-assembly  	
+
+;---------------------------------;
+; Makes characters in the 		  ;
+; first line of the LCD disappear ;
+; and reappear                    ;
+;---------------------------------;
+LCD_flash:
+	;make name disappear
+	mov r3, #0 ;reset r3
+	mov a, #0x81 ; Move cursor to line 1 column 2
+    lcall WriteCommand
+    mov dptr, #disappear
+    lcall PrintString
+    
+    lcall WaitmilliSec
+    
+    ;now make it reappear
+    mov r3, #0 ;reset r3
+    mov a, #0x81 ; Move cursor to line 1 column 2
+    lcall WriteCommand
+    mov dptr, #my_name
+    lcall PrintString
+    
+    ret
+    
+;---------------------------------;
+;Makes characters in the first    ;
+;line of the LCD scroll left      ;
+;until r4 is decremented to 0     ;
+;---------------------------------;
+LCD_scroll:
+	lcall WaitmilliSec
+	mov a, #0x18 ;set LCD to scroll left
+	lcall WriteCommand
+	dec r4
+	cjne r4, #0, LCD_scroll
+		
+	scroll_complete:
+	ret
+	
 ;---------------------------------;
 ; Main loop.  Initialize stack,   ;
 ; ports, LCD, and displays        ;
 ; letters on the LCD              ; 
 ;---------------------------------;
 myprogram:
-mov SP, #7FH
-; Configure the pins as bi-directional so we can use them as input/output
-mov P0M1, #0x00
-mov P0M2, #0x00
-mov P1M1, #0x00
-mov P1M2, #0x00
-mov P3M2, #0x00
-mov P3M2, #0x00
-lcall LCD_4BIT
-mov a, #0x80 ; Move cursor to line 1 column 1
-lcall WriteCommand
-mov dptr, #name
-lcall Display_String
-
-mov a, #0xC0 ; Move cursor to line 2 column 1
-lcall WriteCommand
-mov dptr, #student_number
-lcall Display_String
-
-lcall scroll
-
-scroll:
-mov a, #0x18
-lcall WriteCommand
-mov a, #0x10
-lcall WriteCommand
-lcall WaitmilliSec
-sjmp scroll
-
+    mov SP, #7FH
+    ; Configure the pins as bi-directional so we can use them as input/output
+    mov P0M1, #0x00
+    mov P0M2, #0x00
+    mov P1M1, #0x00
+    mov P1M2, #0x00
+    mov P3M2, #0x00
+    mov P3M2, #0x00
+    
+    mov r2, #255 ;set millisecond counter
+    mov r3, #0 ;reset r3
+    mov r4, #40 ;value of r4 determines how many times the LCD will scroll when LCD_scroll is called
+    lcall LCD_4BIT
+    
+    ;print the special characters
+    lcall customchar
+    mov a, #0x80 ;Move cursor to line 1 column 1
+    lcall WriteCommand
+    mov a,#2H ; For pattern @50H
+    lcall WriteData 
+    
+    mov a, #0xC0 ;Move cursor to line 1 column 0
+    lcall WriteCommand
+    mov a,#3H ; For pattern @58H
+    lcall WriteData 
+    
+    mov a, #0xCF ;Move cursor to line 2 column 16
+    lcall WriteCommand
+    mov a,#3H ; For pattern @58H
+    lcall WriteData 
+    
+    mov a, #0x8F ;Move cursor to line 1 column 16
+    lcall WriteCommand
+    mov a,#2H ; For pattern @50H
+    lcall WriteData 
+    
+    mov a, #0x8B ;Move cursor to line 1 column 11
+    lcall WriteCommand
+    mov a,#1H ; For pattern @48H
+    lcall WriteData 
+    
+    ;Print name and student number
+    mov a, #0x81 ; Move cursor to line 1 column 2
+    lcall WriteCommand
+    mov dptr, #my_name
+    lcall PrintString
+    
+    mov r3, #0 ;reset r3
+    mov a, #0xC1 ; Move cursor to line 2 column 1
+    lcall WriteCommand
+    mov dptr, #student_num
+    lcall PrintString
+	
+	lcall LCD_flash
+	lcall LCD_scroll
+	
 forever:
     sjmp forever
   
 END
-
