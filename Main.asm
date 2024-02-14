@@ -23,8 +23,8 @@ TIMER0_RELOAD EQU ((65536-(CLK/TIMER0_RATE)))
 BAUD              EQU 115200 ; Baud rate of UART in bps
 TIMER1_RELOAD     EQU (0x100-(CLK/(16*BAUD)))
 TIMER0_RELOAD_1MS EQU (0x10000-(CLK/1000))
-TIMER2_RATE   EQU 1000     ; 1000Hz, for a timer tick of 1ms
-TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
+TIMER2_RATE   EQU 100     ; 1000Hz, for a timer tick of 1ms
+TIMER2_RELOAD EQU ((65536-(CLK/16*TIMER2_RATE)))
 
 ;---------------------------------;
 ; Define any buttons & pins here  ;
@@ -71,6 +71,7 @@ Soak_display: 	  db 'Soak 		 s=xxx', 0 ; state 2 display
 Ramp_to_peak: 	  db 'RampToPeak s=xxx', 0 ; state 3 display
 Reflow_display:   db 'Reflow 	 s=xxx', 0 ; state 4 display
 Cooling_display:  db 'Cooling 	 s=xxx', 0 ; state 5 display
+clear_string:     db '                ', 0
 ;---------------------------------------------
 cseg
 
@@ -94,7 +95,8 @@ x:   ds 4
 y:   ds 4
 bcd: ds 5   ;temperature variable for reading
 Count1ms:     ds 2 ; Used to determine when one second has passed
-seconds: ds 1
+seconds: ds 1 ;keep track of time
+seconds_counter: ds 1
 VLED_ADC: ds 2
 reflow_time: ds 1 ; time parameter for reflow	
 reflow_temp: ds 1 ; temp parameter for reflow
@@ -188,6 +190,7 @@ Timer2_ISR:
 	; The two registers used in the ISR must be saved in the stack
 	push psw
 	push acc
+
 	inc pwm_counter
 	clr c
 	mov a, pwm
@@ -360,37 +363,6 @@ start_stop:
 	cpl start_stop_flag
 	sjmp LCD_PB_Done
 
-;---------------------------------;
-; Send a BCD number to PuTTY ;
-;---------------------------------;
-Send_BCD mac
-push ar0
-mov r0, %0
-lcall ?Send_BCD
-pop ar0
-endmac
-?Send_BCD:
-push acc
-; Write most significant digit
-mov a, r0
-swap a
-anl a, #0fh
-orl a, #30h
-lcall putchar
-; write least significant digit
-mov a, r0
-anl a, #0fh
-orl a, #30h
-lcall putchar
-pop acc
-ret
-
-putchar:
-jnb TI, putchar
-clr TI
-mov SBUF, a
-ret
-
 ; We can display a number any way we want.  In this case with
 ; four decimal places.
 Display_formated_BCD:
@@ -452,7 +424,7 @@ Display_PushButtons_LCD:
 
 
 ;-------------------------------------------------;
-; Display all values and temperatures to the LCD  ;
+; Display all values and temperatures to the LCDï¿½ ;
 ;-------------------------------------------------;
 Display_Data:
 	clr ADCF
@@ -565,6 +537,7 @@ main:
     lcall Timer2_Init
     setb EA   ; Enable Global interrupts
     ; initial messages in LCD
+	clr start_stop_flag
 	Set_Cursor(1, 1)
     Send_Constant_String(#To_Message)
 	Set_Cursor(2, 1)
@@ -578,7 +551,7 @@ main:
 	mov FSM_state,#0
     
 ;---------------------------------;
-; 		FSM	funtion			      ;
+; 		FSM	funtion			  ï¿½ï¿½ï¿½ ;
 ;---------------------------------;
 FSM:
     mov a, FSM_state
@@ -598,8 +571,6 @@ FSM_state0_done:
 FSM_state1:
     cjne a, #1, FSM_state2
     mov pwm, #100
-    
-    
     clr c
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
     mov a, #0x3C
