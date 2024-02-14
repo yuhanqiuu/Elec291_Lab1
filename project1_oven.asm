@@ -398,11 +398,6 @@ ret
 
 Display_PushButtons_LCD:
 	Set_Cursor(2, 2)
-	mov x+0, soak_temp
-	mov x+1,#0
-	mov x+2,#0
-	mov x+3,#0
-	lcall
 	mov a, soak_temp
 	lcall SendToLCD
 	
@@ -481,15 +476,50 @@ Display_Data:
 ; Convert to BCD and display
 	lcall hex2bcd
 	lcall Display_formated_BCD
+
+	reti
+
+;-----------------------------------------------------------------------------;
+;Grabs the value in register a and then compares it to the current temperature;
+;-----------------------------------------------------------------------------;
+
+Compare_temp:
+	mov temp+0, bcd+2
+	mov temp+1, bcd+3
+	mov bcd+0, temp+0
+	mov bcd+1, temp+1
+	mov bcd+2,#0
+	mov bcd+3,#0
+	mov bcd+4,#0
 	
+	lcall bcd2hex
 	
+	mov y+0,x+0
+	mov y+1,x+1
+	mov y+2,x+2
+	mov y+3,x+3
 	
+	mov x+0,a
+	mov x+1,#0
+	mov x+2,#0
+	mov x+3,#0
+	
+	lcall hex2bcd
+	lcall x_lteq_y
+
+	reti
+
+Wait_1sec:
 	; Wait 500 ms between conversions
 	mov R2, #250
 	lcall waitms
 	mov R2, #250
 	lcall waitms
-
+	; Wait 500 ms between conversions
+	mov R2, #250
+	lcall waitms
+	mov R2, #250
+	lcall waitms
 	reti
 
 main:
@@ -540,19 +570,20 @@ FSM_state1:
     jc abort
 continue:
     clr c   ; ! i don't know what is c
-    mov a, soak_temp    ; set a to soak temp
-	mov temp, bcd
-    subb a, temp    ; temp is our currect temp
-    jnc FSM_state1_done
+	lcall Display_Data
+	mov a, soak_temp    ; set a to soak temp
+	lcall Compare_temp
+    jnb mf, FSM_state1_done
     mov seconds, #0     ; set time to 0
     mov FSM_state, #2
 FSM_state1_done:
+	lcall Wait_1sec
     ljmp FSM
 abort:
-    mov a, #50  ; set a to 50 degree
-	mov temp, bcd
-    subb a, temp
-    jc continue     ; if temp is larger then 50 degree, go back to continue
+    mov a, #0x32  ; set a to 50 degree
+	lcall Display_Data
+	lcall Compare_temp
+	jb mf, continue ; if temp is larger then 50 degree, go back to continue
     mov FSM_state, #0   ; abort the FSM
 
 stop_state:
@@ -571,28 +602,32 @@ FSM_state2:
     Set_Cursor(2, 1)
     Send_Constant_String(#Soak_display)
     clr c   ; ! i don't know what is c 
+	lcall Display_Data
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
     subb a, seconds    ; temp is our currect sec
     jnc FSM_state2_done
     mov seconds, #0     ; set time to 0
     mov FSM_state, #3
 FSM_state2_done:
+	lcall Wait_1sec
     ljmp FSM
 
 FSM_state3:
     cjne a, #3, FSM_state4
     mov pwm, #100
-    mov a, reflow_temp    ; set a to reflow temp
     Set_Cursor(2, 1)
     Send_Constant_String(#Ramp_to_peak)
     clr c   ; ! i don't know what is c 
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
-	mov temp, bcd
-    subb a, temp    ; temp is our currect temp
-    jnc FSM_state3_done
+	lcall Display_Data
+	mov a, reflow_temp    ; set a to reflow temp
+	lcall Compare_temp
+	
+    jnb mf, FSM_state3_done
     mov seconds, #0     ; set time to 0
     mov FSM_state, #4
 FSM_state3_done:
+	lcall Wait_1sec
     ljmp FSM
 	
 intermediate_state_0:
@@ -608,27 +643,32 @@ FSM_state4:
     Set_Cursor(2, 1)
     Send_Constant_String(#Reflow_display)
     clr c   ; ! i don't know what is c 
+	lcall Display_Data
     jnb start_stop_flag, intermediate_stop_jump; checks the flag if 0, then means stop was pressed, if 1 keep on going
     subb a, seconds    ; temp is our currect sec
     jnc FSM_state4_done
     mov seconds, #0     ; set time to 0
     mov FSM_state, #5
 FSM_state4_done:
+	lcall Wait_1sec
     ljmp FSM
 
 FSM_state5:
     cjne a, #5, intermediate_state_0
     mov pwm, #0
-    mov a, #60    ; set a to 60
+    
     Set_Cursor(2, 1)
     Send_Constant_String(#Cooling_display)
     clr c   ; ! i don't know what is c
     jnb start_stop_flag, intermediate_stop_jump ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
-    mov temp, bcd
-	subb a, temp    ; temp is our currect temp, need to be edit
-    jnc FSM_state5_done
+	lcall Display_Data
+	mov a, #0x3C    ; set a to 60
+	lcall Compare_temp
+
+    jb mf, FSM_state5_done
     mov seconds, #0     ; set time to 0
     mov FSM_state, #0
 FSM_state5_done:
+	lcall Wait_1sec
     ljmp FSM
 END

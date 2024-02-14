@@ -1,3 +1,5 @@
 Put your ideas for extra features here!
 
 1. Music by adjusting speaker's frequency
+2. a taser
+3. special characters

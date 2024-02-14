@@ -155,6 +155,29 @@ lcall WriteCommand
 mov R2, #2
 lcall WaitmilliSec
 ret
+
+
+;for special character 
+LCD_build:
+    mov   A,#48H         ;Load the location where we want to store
+    acall WriteCommand    ;Send the command
+    mov   A,#04H         ;Load row 1 data
+    acall WriteData   ;Send the data
+    mov   A,#0EH         ;Load row 2 data
+    acall WriteData   ;Send the data
+    mov   A,#0EH         ;Load row 3 data
+    acall WriteData   ;Send the data
+    mov   A,#0EH         ;Load row 4 data
+    acall WriteData   ;Send the data
+    mov   A,#1FH         ;Load row 5 data
+    acall WriteData   ;Send the data
+    mov   A,#00H         ;Load row 6 data
+    acall WriteData   ;Send the data
+    mov   A,#04H         ;Load row 7 data
+    acall WriteData   ;Send the data
+    mov   A,#00H         ;Load row 8 data
+    acall WriteData   ;Send the data
+    ret                  ;Return from routine
 ;---------------------------------;
 ; Main loop. Initialize stack, ;
 ; ports, LCD, and displays ;
@@ -180,15 +203,18 @@ lcall WriteCommand
 mov dptr, #student_number
 lcall Display_String
 
-lcall scroll
+mov a, #0xC4
+lcall LCD_build
 
-scroll:
-mov a, #0x18
-lcall WriteCommand
-mov a, #0x10
-lcall WriteCommand
-lcall WaitmilliSec
-sjmp scroll
+;lcall scroll
+
+; scroll:
+; mov a, #0x18
+; lcall WriteCommand
+; mov a, #0x10
+; lcall WriteCommand
+; lcall WaitmilliSec
+; sjmp scroll
 
 forever:
 sjmp forever
