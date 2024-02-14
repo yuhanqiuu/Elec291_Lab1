@@ -47,24 +47,6 @@ DB '77187326',0
 ;---------------------------------;
 ; Create custom char;
 ;---------------------------------;
-display_string:
-clr a
-movc a, @a+DPTR
-jz display_string_done
-lcall WriteData
-inc DPTR
-sjmp display_string
-
-display_string_done:
-ret
-mov a, #0x80 ; Move cursor to line 1 column 1
-lcall WriteCommand
-mov DPTR, #name
-lcall display_string
-mov a, #0xC0 ; Move cursor to line 2 column 1
-lcall WriteCommand
-mov DPTR, #student_number
-lcall display_string
 ;---------------------------------;
 ; Writes acc to LCD in 4-bit mode ;
 ;---------------------------------;
