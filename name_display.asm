@@ -158,7 +158,7 @@ ret
 
 
 ;for special character 
-double_e:
+double_eighth:
     mov   A,#48H         ;Load the location where we want to store
     lcall WriteCommand    ;Send the command
     mov   A,#00H         ;Load row 1 data
@@ -193,18 +193,18 @@ mov P1M2, #0x00
 mov P3M2, #0x00
 mov P3M2, #0x00
 lcall LCD_4BIT
-mov a, #0x80 ; Move cursor to line 1 column 1
-lcall WriteCommand
-mov dptr, #name
-lcall Display_String
+; mov a, #0x80 ; Move cursor to line 1 column 1
+; lcall WriteCommand
+; mov dptr, #name
+; lcall Display_String
 
-mov a, #0xC0 ; Move cursor to line 2 column 1
-lcall WriteCommand
-mov dptr, #student_number
-lcall Display_String
+; mov a, #0xC0 ; Move cursor to line 2 column 1
+; lcall WriteCommand
+; mov dptr, #student_number
+; lcall Display_String
 
 
-lcall LCD_build
+lcall double_eighth
 
 mov a, #0xCF
 lcall WriteCommand
