@@ -206,10 +206,36 @@ Timer2_ISR:
 	mov seconds, a
 	setb s_flag
 	
+jb FSM_start_flag, check_stop
+	
 Timer2_ISR_done:
+
 	pop acc
 	pop psw
 	reti
+
+check_stop:
+	setb PB4
+	; The input pin used to check set to '1'
+	setb P1.5
+	clr P0.3
+	jb P1.5, stop_PB_Done
+	; Debounce
+	mov R2, #50
+	lcall waitms
+	jb P1.5, stop_PB_Done
+	setb P0.3
+	clr P0.3
+	mov c, P1.5
+	mov PB0, c
+	setb P0.3
+	jnb PB0, start_stop_timer
+	
+stop_PB_Done:
+	ljmp Timer2_ISR_done
+start_stop_timer:
+	cpl start_stop_flag
+	sjmp stop_PB_Done
 
 ;---------------------------------;
 ; Temperature senseor function    ;
@@ -369,8 +395,9 @@ Display_formated_BCD:
 	Set_Cursor(1, 4) ; display To
 	Display_BCD(bcd+3)
 	Display_BCD(bcd+2) ;this is just in case temperatures exceed 100C and we're in deg F
-	Set_Cursor(2,16)
-	Display_BCD(seconds)
+	Set_Cursor(2,14)
+	mov a, seconds
+	lcall SendToLCD
 
 	;send the BCD value to the MATLAB script
 	Send_BCD(bcd+3)
@@ -551,7 +578,7 @@ main:
 	mov FSM_state,#0
     
 ;---------------------------------;
-; 		FSM	funtion			  ��� ;
+; 		FSM	funtion			      ;
 ;---------------------------------;
 FSM:
     mov a, FSM_state
