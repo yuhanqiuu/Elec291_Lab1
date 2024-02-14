@@ -160,117 +160,129 @@
 01BA            160   ; sjmp scroll
 01BA            161   
 01BA            162   forever:
-01BA 1200E6     163   lcall double_eighth
-01BD 7480       164   mov a, #0x80
+01BA 120140     163   lcall heart
+01BD 7481       164   mov a, #0x81
 01BF 120057     165   lcall ?WriteCommand
 01C2 7401       166   mov a, #0x01
 01C4 120052     167   lcall ?WriteData
 01C7            168   
 01C7 120113     169   lcall eighth
-01CA 7484       170   mov a, #0x84
+01CA 74C5       170   mov a, #0xC5
 01CC 120057     171   lcall ?WriteCommand
 01CF 7402       172   mov a, #2H
 01D1 120052     173   lcall ?WriteData
 01D4            174   
-01D4 120140     175   lcall heart
+01D4 12016D     175   lcall bell
 01D7 7488       176   mov a, #0x88
 01D9 120057     177   lcall ?WriteCommand
 01DC 7403       178   mov a, #3H
 01DE 120052     179   lcall ?WriteData
 01E1            180   
-01E1 12016D     181   lcall bell
-01E4 7489       182   mov a, #0x89
+01E1 1200E6     181   lcall double_eighth
+01E4 74CB       182   mov a, #0xCB
 01E6 120057     183   lcall ?WriteCommand
 01E9 7404       184   mov a, #4H
 01EB 120052     185   lcall ?WriteData
 01EE            186   
-01EE C002       187            push AR2
-01F0 7AFA       187            mov R2, #250
-01F2 12000D     187            lcall ?Wait_Milli_Seconds
-01F5 D002       187            pop AR2
-01F7            188   
-01F7 C0E0       189            push acc
-01F9 7401       189            mov a, #1
-01FB 14         189            dec a
-01FC 12009C     189            lcall ?Set_Cursor_1 ; Select column and row
-01FF D0E0       189            pop acc
-0201 C083       190            push dph
-0203 C082       190            push dpl
-0205 C0E0       190            push acc
-0207 9000D5     190            mov dptr, #clear_screen
-020A 12008F     190            lcall ?Send_Constant_String
-020D D0E0       190            pop acc
-020F D082       190            pop dpl
-0211 D083       190            pop dph
-0213 C0E0       191            push acc
-0215 7401       191            mov a, #1
-0217 14         191            dec a
-0218 12009A     191            lcall ?Set_Cursor_2 ; Select column and row
-021B D0E0       191            pop acc
-021D C083       192            push dph
-021F C082       192            push dpl
-0221 C0E0       192            push acc
-0223 9000D5     192            mov dptr, #clear_screen
-0226 12008F     192            lcall ?Send_Constant_String
-0229 D0E0       192            pop acc
-022B D082       192            pop dpl
-022D D083       192            pop dph
-022F            193   
-022F 1200E6     194   lcall double_eighth
-0232 74C0       195   mov a, #0xC0
-0234 120057     196   lcall ?WriteCommand
-0237 7401       197   mov a, #0x01
-0239 120052     198   lcall ?WriteData
+01EE 120140     187   lcall heart
+01F1 748E       188   mov a, #0x8E
+01F3 120057     189   lcall ?WriteCommand
+01F6 7405       190   mov a, #5H
+01F8 120052     191   lcall ?WriteData
+01FB            192   
+01FB C002       193            push AR2
+01FD 7AFA       193            mov R2, #250
+01FF 12000D     193            lcall ?Wait_Milli_Seconds
+0202 D002       193            pop AR2
+0204            194   
+0204 C0E0       195            push acc
+0206 7401       195            mov a, #1
+0208 14         195            dec a
+0209 12009C     195            lcall ?Set_Cursor_1 ; Select column and row
+020C D0E0       195            pop acc
+020E C083       196            push dph
+0210 C082       196            push dpl
+0212 C0E0       196            push acc
+0214 9000D5     196            mov dptr, #clear_screen
+0217 12008F     196            lcall ?Send_Constant_String
+021A D0E0       196            pop acc
+021C D082       196            pop dpl
+021E D083       196            pop dph
+0220 C0E0       197            push acc
+0222 7401       197            mov a, #1
+0224 14         197            dec a
+0225 12009A     197            lcall ?Set_Cursor_2 ; Select column and row
+0228 D0E0       197            pop acc
+022A C083       198            push dph
+022C C082       198            push dpl
+022E C0E0       198            push acc
+0230 9000D5     198            mov dptr, #clear_screen
+0233 12008F     198            lcall ?Send_Constant_String
+0236 D0E0       198            pop acc
+0238 D082       198            pop dpl
+023A D083       198            pop dph
 023C            199   
-023C 120113     200   lcall eighth
-023F 74C4       201   mov a, #0xC4
+023C 120140     200   lcall heart
+023F 74C2       201   mov a, #0xC2
 0241 120057     202   lcall ?WriteCommand
-0244 7402       203   mov a, #2H
+0244 7401       203   mov a, #0x01
 0246 120052     204   lcall ?WriteData
 0249            205   
-0249 120140     206   lcall heart
-024C 74C8       207   mov a, #0xC8
+0249 120113     206   lcall eighth
+024C 7485       207   mov a, #0x85
 024E 120057     208   lcall ?WriteCommand
-0251 7403       209   mov a, #3H
+0251 7402       209   mov a, #2H
 0253 120052     210   lcall ?WriteData
 0256            211   
 0256 12016D     212   lcall bell
-0259 74C9       213   mov a, #0xC9
+0259 74C8       213   mov a, #0xC8
 025B 120057     214   lcall ?WriteCommand
-025E 7404       215   mov a, #4H
+025E 7403       215   mov a, #3H
 0260 120052     216   lcall ?WriteData
 0263            217   
-0263 C002       218            push AR2
-0265 7AFA       218            mov R2, #250
-0267 12000D     218            lcall ?Wait_Milli_Seconds
-026A D002       218            pop AR2
-026C            219   
-026C C0E0       220            push acc
-026E 7401       220            mov a, #1
-0270 14         220            dec a
-0271 12009C     220            lcall ?Set_Cursor_1 ; Select column and row
-0274 D0E0       220            pop acc
-0276 C083       221            push dph
-0278 C082       221            push dpl
-027A C0E0       221            push acc
-027C 9000D5     221            mov dptr, #clear_screen
-027F 12008F     221            lcall ?Send_Constant_String
-0282 D0E0       221            pop acc
-0284 D082       221            pop dpl
-0286 D083       221            pop dph
-0288 C0E0       222            push acc
-028A 7401       222            mov a, #1
-028C 14         222            dec a
-028D 12009A     222            lcall ?Set_Cursor_2 ; Select column and row
-0290 D0E0       222            pop acc
-0292 C083       223            push dph
-0294 C082       223            push dpl
-0296 C0E0       223            push acc
-0298 9000D5     223            mov dptr, #clear_screen
-029B 12008F     223            lcall ?Send_Constant_String
-029E D0E0       223            pop acc
-02A0 D082       223            pop dpl
-02A2 D083       223            pop dph
-02A4            224   
-02A4 0201BA     225   ljmp forever
-02A7            226   END
+0263 1200E6     218   lcall double_eighth
+0266 748B       219   mov a, #0x8B
+0268 120057     220   lcall ?WriteCommand
+026B 7404       221   mov a, #4H
+026D 120052     222   lcall ?WriteData
+0270            223   
+0270 120140     224   lcall heart
+0273 74CE       225   mov a, #0xCE
+0275 120057     226   lcall ?WriteCommand
+0278 7405       227   mov a, #5H
+027A 120052     228   lcall ?WriteData
+027D            229   
+027D C002       230            push AR2
+027F 7AFA       230            mov R2, #250
+0281 12000D     230            lcall ?Wait_Milli_Seconds
+0284 D002       230            pop AR2
+0286            231   
+0286 C0E0       232            push acc
+0288 7401       232            mov a, #1
+028A 14         232            dec a
+028B 12009C     232            lcall ?Set_Cursor_1 ; Select column and row
+028E D0E0       232            pop acc
+0290 C083       233            push dph
+0292 C082       233            push dpl
+0294 C0E0       233            push acc
+0296 9000D5     233            mov dptr, #clear_screen
+0299 12008F     233            lcall ?Send_Constant_String
+029C D0E0       233            pop acc
+029E D082       233            pop dpl
+02A0 D083       233            pop dph
+02A2 C0E0       234            push acc
+02A4 7401       234            mov a, #1
+02A6 14         234            dec a
+02A7 12009A     234            lcall ?Set_Cursor_2 ; Select column and row
+02AA D0E0       234            pop acc
+02AC C083       235            push dph
+02AE C082       235            push dpl
+02B0 C0E0       235            push acc
+02B2 9000D5     235            mov dptr, #clear_screen
+02B5 12008F     235            lcall ?Send_Constant_String
+02B8 D0E0       235            pop acc
+02BA D082       235            pop dpl
+02BC D083       235            pop dph
+02BE            236   
+02BE 0201BA     237   ljmp forever
+02C1            238   END

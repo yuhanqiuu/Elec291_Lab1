@@ -160,28 +160,34 @@ lcall LCD_4BIT
 ; sjmp scroll
 
 forever:
-lcall double_eighth
-mov a, #0x80
+lcall heart
+mov a, #0x81
 lcall ?WriteCommand
 mov a, #0x01
 lcall ?WriteData
 
 lcall eighth
-mov a, #0x84
+mov a, #0xC5
 lcall ?WriteCommand
 mov a, #2H
 lcall ?WriteData
 
-lcall heart
+lcall bell
 mov a, #0x88
 lcall ?WriteCommand
 mov a, #3H
 lcall ?WriteData
 
-lcall bell
-mov a, #0x89
+lcall double_eighth
+mov a, #0xCB
 lcall ?WriteCommand
 mov a, #4H
+lcall ?WriteData
+
+lcall heart
+mov a, #0x8E
+lcall ?WriteCommand
+mov a, #5H
 lcall ?WriteData
 
 Wait_Milli_Seconds(#250)
@@ -191,28 +197,34 @@ Send_Constant_String(#clear_screen)
 Set_Cursor(2,1)
 Send_Constant_String(#clear_screen)
 
-lcall double_eighth
-mov a, #0xC0
+lcall heart
+mov a, #0xC2
 lcall ?WriteCommand
 mov a, #0x01
 lcall ?WriteData
 
 lcall eighth
-mov a, #0xC4
+mov a, #0x85
 lcall ?WriteCommand
 mov a, #2H
 lcall ?WriteData
 
-lcall heart
+lcall bell
 mov a, #0xC8
 lcall ?WriteCommand
 mov a, #3H
 lcall ?WriteData
 
-lcall bell
-mov a, #0xC9
+lcall double_eighth
+mov a, #0x8B
 lcall ?WriteCommand
 mov a, #4H
+lcall ?WriteData
+
+lcall heart
+mov a, #0xCE
+lcall ?WriteCommand
+mov a, #5H
 lcall ?WriteData
 
 Wait_Milli_Seconds(#250)
