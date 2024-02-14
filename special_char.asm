@@ -33,19 +33,7 @@ $include(LCD_4bit.inc) ; A library of LCD related functions and utility macros
 $LIST
 
 clear_screen:  db '                ', 0
-; When using a 16.6MHz oscillator in the N76E003
-; one cycle takes 1.0/16.6MHz = 60.24 ns
-;---------------------------------;
-; Wait 40 microseconds ;
-;---------------------------------;
-Wait40uSec:
-push AR0
-mov R0, #133
-L0:
-nop
-djnz R0, L0 ; 1+4 cycles->5*60.24ns*133=40us
-pop AR0
-ret
+
 ;---------------------------------;
 ; Wait 'R2' milliseconds ;
 ;---------------------------------;
@@ -60,26 +48,7 @@ djnz R2, L3 ; number of millisecons to wait passed in R2
 pop AR1
 pop AR0
 ret
-;---------------------------------;
-; Toggles the LCD's 'E' pin ;
-;---------------------------------;
-LCD_pulse:
-setb LCD_E
-lcall Wait40uSec
-clr LCD_E
-ret
-;---------------------------------;
-; Writes data to LCD ;
-;---------------------------------;
-WriteData:
-setb LCD_RS
-ljmp LCD_byte
-;---------------------------------;
-; Writes command to LCD ;
-;---------------------------------;
-WriteCommand:
-clr LCD_RS
-ljmp LCD_byte
+
 ;---------------------------------;
 ;Name and student # strings;
 ;---------------------------------;
