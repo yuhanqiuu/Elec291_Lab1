@@ -34,20 +34,7 @@ $LIST
 
 clear_screen:  db '                ', 0
 
-;---------------------------------;
-; Wait 'R2' milliseconds ;
-;---------------------------------;
-WaitmilliSec:
-push AR0
-push AR1
-L3: mov R1, #40
-L2: mov R0, #104
-L1: djnz R0, L1 ; 4 cycles->4*60.24ns*104=25.0us
-djnz R1, L2 ; 25us*40=1.0ms
-djnz R2, L3 ; number of millisecons to wait passed in R2
-pop AR1
-pop AR0
-ret
+
 
 ;---------------------------------;
 ;Name and student # strings;
@@ -111,7 +98,7 @@ clr LCD_E ; Resting state of LCD's enable is zero
 ; clr LCD_RW ; Not used, pin tied to GND
 ; After power on, wait for the LCD start up time before initializing
 mov R2, #40
-lcall WaitmilliSec
+lcall Wait_Milli_Seconds(#250)
 ; First make sure the LCD is in 8-bit mode and then change to 4-bit mode
 mov a, #0x33
 lcall WriteCommand
@@ -128,7 +115,7 @@ mov a, #0x01 ; Clear screen command (takes some time)
 lcall WriteCommand
 ;Wait for clear screen command to finish. Usually takes 1.52ms.
 mov R2, #2
-lcall WaitmilliSec
+lcall Wait_Milli_Seconds(#250)
 ret
 
 
