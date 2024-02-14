@@ -31,7 +31,6 @@ LCD_D5 equ P0.1
 LCD_D6 equ P0.2
 LCD_D7 equ P0.3
 
-
 ; When using a 16.6MHz oscillator in the N76E003
 ; one cycle takes 1.0/16.6MHz = 60.24 ns
 
