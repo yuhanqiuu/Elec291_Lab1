@@ -199,7 +199,7 @@ Timer2_ISR:
 	mov pwm_counter, #0
 	inc seconds ; It is super easy to keep a seconds count here
 	setb s_flag
-
+	
 Timer2_ISR_done:
 	pop acc
 	pop psw
@@ -357,6 +357,36 @@ start_stop:
 	cpl start_stop_flag
 	sjmp LCD_PB_Done
 
+;---------------------------------;
+; Send a BCD number to PuTTY ;
+;---------------------------------;
+Send_BCD mac
+push ar0
+mov r0, %0
+lcall ?Send_BCD
+pop ar0
+endmac
+?Send_BCD:
+push acc
+; Write most significant digit
+mov a, r0
+swap a
+anl a, #0fh
+orl a, #30h
+lcall putchar
+; write least significant digit
+mov a, r0
+anl a, #0fh
+orl a, #30h
+lcall putchar
+pop acc
+ret
+
+putchar:
+jnb TI, putchar
+clr TI
+mov SBUF, a
+ret
 
 ; We can display a number any way we want.  In this case with
 ; four decimal places.
@@ -364,6 +394,8 @@ Display_formated_BCD:
 	Set_Cursor(1, 4) ; display To
 	Display_BCD(bcd+3)
 	Display_BCD(bcd+2) ;this is just in case temperatures exceed 100C and we're in deg F
+	Set_Cursor(2,14)
+	Display_BCD(seconds)
 
 	;send the BCD value to the MATLAB script
 	Send_BCD(bcd+3)
@@ -413,8 +445,8 @@ Display_PushButtons_LCD:
     mov a, reflow_time
 	lcall SendToLCD
 	
-		
 	ret
+
 
 ;-------------------------------------------------;
 ; Display all values and temperatures to the LCD  ;
@@ -535,11 +567,12 @@ main:
 	Set_Cursor(2, 1)
     Send_Constant_String(#Time_temp_display)
 	
-	mov seconds, #0x00
+	mov seconds, #0
 	mov soak_temp, #0x8C ;140
 	mov soak_time, #0x3C ; 60
 	mov reflow_temp, #0xE6 ; 230
 	mov reflow_time, #0x1E ; 30
+	mov FSM_state,#0
 	setb TR2
     
 ;---------------------------------;
@@ -565,7 +598,7 @@ FSM_state1:
     Send_Constant_String(#Ramp_to_soak)
     clr c
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
-    mov a, #0x60
+    mov a, #60
     subb a, seconds
     jc abort
 continue:
