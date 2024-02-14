@@ -1,0 +1,276 @@
+0000              1   ; LCD_test_4bit.asm: Initializes and uses an LCD in 4-bit mode
+0000              2   ; using the most common procedure found on the internet and datasheets.
+                  4   $LIST
+0000              6   org 0000H
+0000 0201A2       7   ljmp myprogram
+0003              8   ; N76E003 pinout:
+0003              9   ; -------
+0003             10   ; PWM2/IC6/T0/AIN4/P0.5 -|1 20|- P0.4/AIN5/STADC/PWM3/IC3
+0003             11   ; TXD/AIN3/P0.6 -|2 19|- P0.3/PWM5/IC5/AIN6
+0003             12   ; RXD/AIN2/P0.7 -|3 18|- P0.2/ICPCK/OCDCK/RXD_1/[SCL]
+0003             13   ; RST/P2.0 -|4 17|- P0.1/PWM4/IC4/MISO
+0003             14   ; INT0/OSCIN/AIN1/P3.0 -|5 16|- P0.0/PWM3/IC3/MOSI/T1
+0003             15   ; INT1/AIN0/P1.7 -|6 15|- P1.0/PWM2/IC2/SPCLK
+0003             16   ; GND -|7 14|- P1.1/PWM1/IC1/AIN7/CLO
+0003             17   ;[SDA]/TXD_1/ICPDA/OCDDA/P1.6 -|8 13|- P1.2/PWM0/IC0
+0003             18   ; VDD -|9 12|- P1.3/SCL/[STADC]
+0003             19   ; PWM5/IC7/SS/P1.5 -|10 11|- P1.4/SDA/FB/PWM1
+0003             20   ; -------
+0003             21   ;
+0003             22   ; These 'equ' must match the hardware wiring
+0003             23   LCD_RS equ P1.3
+0003             24   ;LCD_RW equ PX.X ; Not used in this code, connect the pin to GND
+0003             25   LCD_E equ P1.4
+0003             26   LCD_D4 equ P0.0
+0003             27   LCD_D5 equ P0.1
+0003             28   LCD_D6 equ P0.2
+0003             29   LCD_D7 equ P0.3
+0003             30   
+                 32   $LIST
+00D5             34   
+00D5 20202020    35   clear_screen:  db '                ', 0
+     20202020
+     20202020
+     20202020
+     00
+00E6             36   
+00E6             37   ;
+00E6             38   ;for special character 
+00E6             39   double_eighth:
+00E6 7448        40       mov   A,#48H         ;Load the location where we want to store
+00E8 120057      41       lcall ?WriteCommand    ;Send the command
+00EB 7400        42       mov   A,#00H         ;Load row 1 data
+00ED 120052      43       lcall ?WriteData   ;Send the data
+00F0 740F        44       mov   A,#0FH         ;Load row 2 data
+00F2 120052      45       lcall ?WriteData   ;Send the data
+00F5 7409        46       mov   A,#09H         ;Load row 3 data
+00F7 120052      47       lcall ?WriteData   ;Send the data
+00FA 7409        48       mov   A,#09H         ;Load row 4 data
+00FC 120052      49       lcall ?WriteData   ;Send the data
+00FF 741B        50       mov   A,#1BH         ;Load row 5 data
+0101 120052      51       lcall ?WriteData   ;Send the data
+0104 741B        52       mov   A,#1BH         ;Load row 6 data
+0106 120052      53       lcall ?WriteData   ;Send the data
+0109 7400        54       mov   A,#00H         ;Load row 7 data
+010B 1152        55       acall ?WriteData   ;Send the data
+010D 7400        56       mov   A,#00H         ;Load row 8 data
+010F 120052      57       lcall ?WriteData   ;Send the data
+0112 22          58       ret                  ;Return from routine
+0113             59       
+0113             60   eighth:
+0113 7450        61       mov   A,#50H         ;Load the location where we want to store
+0115 120057      62       lcall ?WriteCommand    ;Send the command
+0118 7404        63       mov   A,#04H         ;Load row 1 data
+011A 120052      64       lcall ?WriteData   ;Send the data
+011D 7406        65       mov   A,#06H         ;Load row 2 data
+011F 120052      66       lcall ?WriteData   ;Send the data
+0122 7405        67       mov   A,#05H         ;Load row 3 data
+0124 120052      68       lcall ?WriteData   ;Send the data
+0127 7404        69       mov   A,#04H         ;Load row 4 data
+0129 120052      70       lcall ?WriteData   ;Send the data
+012C 740C        71       mov   A,#0CH         ;Load row 5 data
+012E 120052      72       lcall ?WriteData   ;Send the data
+0131 7414        73       mov   A,#14H         ;Load row 6 data
+0133 120052      74       lcall ?WriteData   ;Send the data
+0136 7408        75       mov   A,#08H         ;Load row 7 data
+0138 1152        76       acall ?WriteData   ;Send the data
+013A 7400        77       mov   A,#00H         ;Load row 8 data
+013C 120052      78       lcall ?WriteData   ;Send the data
+013F 22          79       ret                  ;Return from routine
+0140             80   
+0140             81   heart:
+0140 7458        82       mov   A,#58H         ;Load the location where we want to store
+0142 120057      83       lcall ?WriteCommand    ;Send the command
+0145 7400        84       mov   A,#00H         ;Load row 1 data
+0147 120052      85       lcall ?WriteData   ;Send the data
+014A 740A        86       mov   A,#0AH         ;Load row 2 data
+014C 120052      87       lcall ?WriteData   ;Send the data
+014F 7415        88       mov   A,#15H         ;Load row 3 data
+0151 120052      89       lcall ?WriteData   ;Send the data
+0154 7411        90       mov   A,#11H         ;Load row 4 data
+0156 120052      91       lcall ?WriteData   ;Send the data
+0159 7411        92       mov   A,#11H         ;Load row 5 data
+015B 120052      93       lcall ?WriteData   ;Send the data
+015E 740A        94       mov   A,#0AH         ;Load row 6 data
+0160 120052      95       lcall ?WriteData   ;Send the data
+0163 7404        96       mov   A,#04H         ;Load row 7 data
+0165 1152        97       acall ?WriteData   ;Send the data
+0167 7400        98       mov   A,#00H         ;Load row 8 data
+0169 120052      99       lcall ?WriteData   ;Send the data
+016C 22         100       ret                  ;Return from routine
+016D            101   bell:
+016D 7460       102       mov   A,#60H         ;Load the location where we want to store
+016F 120057     103       lcall ?WriteCommand    ;Send the command
+0172 7400       104       mov   A,#00H         ;Load row 1 data
+0174 120052     105       lcall ?WriteData   ;Send the data
+0177 7404       106       mov   A,#04H          ;Load row 2 data
+0179 120052     107       lcall ?WriteData   ;Send the data
+017C 740E       108       mov   A,#0eH          ;Load row 3 data
+017E 120052     109       lcall ?WriteData   ;Send the data
+0181 740E       110       mov   A,#0eH         ;Load row 4 data
+0183 120052     111       lcall ?WriteData   ;Send the data
+0186 740E       112       mov   A,#0eH         ;Load row 5 data
+0188 120052     113       lcall ?WriteData   ;Send the data
+018B 741F       114       mov   A,#1fH         ;Load row 6 data
+018D 120052     115       lcall ?WriteData   ;Send the data
+0190 7400       116       mov   A,#00H         ;Load row 7 data
+0192 1152       117       acall ?WriteData   ;Send the data
+0194 7404       118       mov   A,#04H         ;Load row 8 data
+0196 120052     119       lcall ?WriteData   ;Send the data
+0199 22         120       ret                  ;Return from routine
+019A            121   
+019A            122   clear_bit:
+019A 120057     123       lcall ?WriteCommand
+019D 7420       124       mov a, #' '
+019F 120052     125       lcall ?WriteData
+01A2            126   ;---------------------------------;
+01A2            127   ; Main loop. Initialize stack, ;
+01A2            128   ; ports, LCD, and displays ;
+01A2            129   ; letters on the LCD ;
+01A2            130   ;---------------------------------;
+01A2            131   myprogram:
+01A2 75817F     132   mov SP, #7FH
+01A5            133   ; Configure the pins as bi-directional so we can use them as input/output
+01A5 75B100     134   mov P0M1, #0x00
+01A8 75B200     135   mov P0M2, #0x00
+01AB 75B300     136   mov P1M1, #0x00
+01AE 75B400     137   mov P1M2, #0x00
+01B1 75AD00     138   mov P3M2, #0x00
+01B4 75AD00     139   mov P3M2, #0x00
+01B7 12005C     140   lcall LCD_4BIT
+01BA            141   ; mov a, #0x80 ; Move cursor to line 1 column 1
+01BA            142   ; lcall WriteCommand
+01BA            143   ; mov dptr, #name
+01BA            144   ; lcall Display_String
+01BA            145   
+01BA            146   ; mov a, #0xC0 ; Move cursor to line 2 column 1
+01BA            147   ; lcall WriteCommand
+01BA            148   ; mov dptr, #student_number
+01BA            149   ; lcall Display_String
+01BA            150   
+01BA            151   
+01BA            152   ;lcall scroll
+01BA            153   
+01BA            154   ; scroll:
+01BA            155   ; mov a, #0x18
+01BA            156   ; lcall WriteCommand
+01BA            157   ; mov a, #0x10
+01BA            158   ; lcall WriteCommand
+01BA            159   ; lcall WaitmilliSec
+01BA            160   ; sjmp scroll
+01BA            161   
+01BA            162   forever:
+01BA 1200E6     163   lcall double_eighth
+01BD 7480       164   mov a, #0x80
+01BF 120057     165   lcall ?WriteCommand
+01C2 7401       166   mov a, #0x01
+01C4 120052     167   lcall ?WriteData
+01C7            168   
+01C7 120113     169   lcall eighth
+01CA 7484       170   mov a, #0x84
+01CC 120057     171   lcall ?WriteCommand
+01CF 7402       172   mov a, #2H
+01D1 120052     173   lcall ?WriteData
+01D4            174   
+01D4 120140     175   lcall heart
+01D7 7488       176   mov a, #0x88
+01D9 120057     177   lcall ?WriteCommand
+01DC 7403       178   mov a, #3H
+01DE 120052     179   lcall ?WriteData
+01E1            180   
+01E1 12016D     181   lcall bell
+01E4 7489       182   mov a, #0x89
+01E6 120057     183   lcall ?WriteCommand
+01E9 7404       184   mov a, #4H
+01EB 120052     185   lcall ?WriteData
+01EE            186   
+01EE C002       187            push AR2
+01F0 7AFA       187            mov R2, #250
+01F2 12000D     187            lcall ?Wait_Milli_Seconds
+01F5 D002       187            pop AR2
+01F7            188   
+01F7 C0E0       189            push acc
+01F9 7401       189            mov a, #1
+01FB 14         189            dec a
+01FC 12009C     189            lcall ?Set_Cursor_1 ; Select column and row
+01FF D0E0       189            pop acc
+0201 C083       190            push dph
+0203 C082       190            push dpl
+0205 C0E0       190            push acc
+0207 9000D5     190            mov dptr, #clear_screen
+020A 12008F     190            lcall ?Send_Constant_String
+020D D0E0       190            pop acc
+020F D082       190            pop dpl
+0211 D083       190            pop dph
+0213 C0E0       191            push acc
+0215 7401       191            mov a, #1
+0217 14         191            dec a
+0218 12009A     191            lcall ?Set_Cursor_2 ; Select column and row
+021B D0E0       191            pop acc
+021D C083       192            push dph
+021F C082       192            push dpl
+0221 C0E0       192            push acc
+0223 9000D5     192            mov dptr, #clear_screen
+0226 12008F     192            lcall ?Send_Constant_String
+0229 D0E0       192            pop acc
+022B D082       192            pop dpl
+022D D083       192            pop dph
+022F            193   
+022F 1200E6     194   lcall double_eighth
+0232 74C0       195   mov a, #0xC0
+0234 120057     196   lcall ?WriteCommand
+0237 7401       197   mov a, #0x01
+0239 120052     198   lcall ?WriteData
+023C            199   
+023C 120113     200   lcall eighth
+023F 74C4       201   mov a, #0xC4
+0241 120057     202   lcall ?WriteCommand
+0244 7402       203   mov a, #2H
+0246 120052     204   lcall ?WriteData
+0249            205   
+0249 120140     206   lcall heart
+024C 74C8       207   mov a, #0xC8
+024E 120057     208   lcall ?WriteCommand
+0251 7403       209   mov a, #3H
+0253 120052     210   lcall ?WriteData
+0256            211   
+0256 12016D     212   lcall bell
+0259 74C9       213   mov a, #0xC9
+025B 120057     214   lcall ?WriteCommand
+025E 7404       215   mov a, #4H
+0260 120052     216   lcall ?WriteData
+0263            217   
+0263 C002       218            push AR2
+0265 7AFA       218            mov R2, #250
+0267 12000D     218            lcall ?Wait_Milli_Seconds
+026A D002       218            pop AR2
+026C            219   
+026C C0E0       220            push acc
+026E 7401       220            mov a, #1
+0270 14         220            dec a
+0271 12009C     220            lcall ?Set_Cursor_1 ; Select column and row
+0274 D0E0       220            pop acc
+0276 C083       221            push dph
+0278 C082       221            push dpl
+027A C0E0       221            push acc
+027C 9000D5     221            mov dptr, #clear_screen
+027F 12008F     221            lcall ?Send_Constant_String
+0282 D0E0       221            pop acc
+0284 D082       221            pop dpl
+0286 D083       221            pop dph
+0288 C0E0       222            push acc
+028A 7401       222            mov a, #1
+028C 14         222            dec a
+028D 12009A     222            lcall ?Set_Cursor_2 ; Select column and row
+0290 D0E0       222            pop acc
+0292 C083       223            push dph
+0294 C082       223            push dpl
+0296 C0E0       223            push acc
+0298 9000D5     223            mov dptr, #clear_screen
+029B 12008F     223            lcall ?Send_Constant_String
+029E D0E0       223            pop acc
+02A0 D082       223            pop dpl
+02A2 D083       223            pop dph
+02A4            224   
+02A4 0201BA     225   ljmp forever
+02A7            226   END

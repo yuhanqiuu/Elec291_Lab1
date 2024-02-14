@@ -34,161 +34,95 @@ $LIST
 
 clear_screen:  db '                ', 0
 
-
-
-;---------------------------------;
-;Name and student # strings;
-;---------------------------------;
-name:
-DB 'Adela Xi :)',0
-
-student_number:
-DB '77187326',0
-;---------------------------------;
-; Create custom char;
-;---------------------------------;
-;---------------------------------;
-; Writes acc to LCD in 4-bit mode ;
-;---------------------------------;
-LCD_byte:
-; Write high 4 bits first
-mov c, ACC.7
-mov LCD_D7, c
-mov c, ACC.6
-mov LCD_D6, c
-mov c, ACC.5
-mov LCD_D5, c
-mov c, ACC.4
-mov LCD_D4, c
-lcall LCD_pulse
-; Write low 4 bits next
-mov c, ACC.3
-mov LCD_D7, c
-mov c, ACC.2
-mov LCD_D6, c
-mov c, ACC.1
-mov LCD_D5, c
-mov c, ACC.0
-mov LCD_D4, c
-lcall LCD_pulse
-ret
-;---------------------------------;
-; Configure LCD in 4-bit mode ;
-;---------------------------------;
-LCD_4BIT:
-clr LCD_E ; Resting state of LCD's enable is zero
-; clr LCD_RW ; Not used, pin tied to GND
-; After power on, wait for the LCD start up time before initializing
-mov R2, #40
-lcall Wait_Milli_Seconds(#250)
-; First make sure the LCD is in 8-bit mode and then change to 4-bit mode
-mov a, #0x33
-lcall WriteCommand
-mov a, #0x33
-lcall WriteCommand
-mov a, #0x32 ; change to 4-bit mode
-lcall WriteCommand
-; Configure the LCD
-mov a, #0x28
-lcall WriteCommand
-mov a, #0x0c
-lcall WriteCommand
-mov a, #0x01 ; Clear screen command (takes some time)
-lcall WriteCommand
-;Wait for clear screen command to finish. Usually takes 1.52ms.
-mov R2, #2
-lcall Wait_Milli_Seconds(#250)
-ret
-
-
+;
 ;for special character 
 double_eighth:
     mov   A,#48H         ;Load the location where we want to store
-    lcall WriteCommand    ;Send the command
+    lcall ?WriteCommand    ;Send the command
     mov   A,#00H         ;Load row 1 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#0FH         ;Load row 2 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#09H         ;Load row 3 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#09H         ;Load row 4 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#1BH         ;Load row 5 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#1BH         ;Load row 6 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#00H         ;Load row 7 data
-    acall WriteData   ;Send the data
+    acall ?WriteData   ;Send the data
     mov   A,#00H         ;Load row 8 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     ret                  ;Return from routine
     
 eighth:
     mov   A,#50H         ;Load the location where we want to store
-    lcall WriteCommand    ;Send the command
+    lcall ?WriteCommand    ;Send the command
     mov   A,#04H         ;Load row 1 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#06H         ;Load row 2 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#05H         ;Load row 3 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#04H         ;Load row 4 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#0CH         ;Load row 5 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#14H         ;Load row 6 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#08H         ;Load row 7 data
-    acall WriteData   ;Send the data
+    acall ?WriteData   ;Send the data
     mov   A,#00H         ;Load row 8 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     ret                  ;Return from routine
 
 heart:
     mov   A,#58H         ;Load the location where we want to store
-    lcall WriteCommand    ;Send the command
+    lcall ?WriteCommand    ;Send the command
     mov   A,#00H         ;Load row 1 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#0AH         ;Load row 2 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#15H         ;Load row 3 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#11H         ;Load row 4 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#11H         ;Load row 5 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#0AH         ;Load row 6 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     mov   A,#04H         ;Load row 7 data
-    acall WriteData   ;Send the data
+    acall ?WriteData   ;Send the data
     mov   A,#00H         ;Load row 8 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
     ret                  ;Return from routine
 bell:
     mov   A,#60H         ;Load the location where we want to store
-    lcall WriteCommand    ;Send the command
-    mov   A,#0eH         ;Load row 1 data
-    lcall WriteData   ;Send the data
-    mov   A,#0eH          ;Load row 2 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteCommand    ;Send the command
+    mov   A,#00H         ;Load row 1 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#04H          ;Load row 2 data
+    lcall ?WriteData   ;Send the data
     mov   A,#0eH          ;Load row 3 data
-    lcall WriteData   ;Send the data
-    mov   A,#1fH         ;Load row 4 data
-    lcall WriteData   ;Send the data
-    mov   A,#00H         ;Load row 5 data
-    lcall WriteData   ;Send the data
-    mov   A,#00H         ;Load row 6 data
-    lcall WriteData   ;Send the data
-    mov   A,#04H         ;Load row 7 data
-    acall WriteData   ;Send the data
-    mov   A,#00H         ;Load row 8 data
-    lcall WriteData   ;Send the data
+    lcall ?WriteData   ;Send the data
+    mov   A,#0eH         ;Load row 4 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#0eH         ;Load row 5 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#1fH         ;Load row 6 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#00H         ;Load row 7 data
+    acall ?WriteData   ;Send the data
+    mov   A,#04H         ;Load row 8 data
+    lcall ?WriteData   ;Send the data
     ret                  ;Return from routine
 
 clear_bit:
-    lcall WriteCommand
+    lcall ?WriteCommand
     mov a, #' '
-    lcall WriteData
+    lcall ?WriteData
 ;---------------------------------;
 ; Main loop. Initialize stack, ;
 ; ports, LCD, and displays ;
@@ -215,29 +149,6 @@ lcall LCD_4BIT
 ; lcall Display_String
 
 
-lcall double_eighth
-mov a, #0xCF
-lcall WriteCommand
-mov a, #0x01
-lcall WriteData
-
-lcall eighth
-mov a, #0x8F
-lcall WriteCommand
-mov a, #2H
-lcall WriteData
-
-lcall heart
-mov a, #0x8E
-lcall WriteCommand
-mov a, #3H
-lcall WriteData
-
-lcall bell
-mov a, #0x8B
-lcall WriteCommand
-mov a, #4H
-lcall WriteData
 ;lcall scroll
 
 ; scroll:
@@ -249,14 +160,29 @@ lcall WriteData
 ; sjmp scroll
 
 forever:
-Set_Cursor(1,1)
 lcall double_eighth
-Set_Cursor(1,4)
+mov a, #0x80
+lcall ?WriteCommand
+mov a, #0x01
+lcall ?WriteData
+
 lcall eighth
-Set_Cursor(1,7)
+mov a, #0x84
+lcall ?WriteCommand
+mov a, #2H
+lcall ?WriteData
+
 lcall heart
-Set_Cursor(1,10)
+mov a, #0x88
+lcall ?WriteCommand
+mov a, #3H
+lcall ?WriteData
+
 lcall bell
+mov a, #0x89
+lcall ?WriteCommand
+mov a, #4H
+lcall ?WriteData
 
 Wait_Milli_Seconds(#250)
 
@@ -265,15 +191,36 @@ Send_Constant_String(#clear_screen)
 Set_Cursor(2,1)
 Send_Constant_String(#clear_screen)
 
-Set_Cursor(2,1)
 lcall double_eighth
-Set_Cursor(2,4)
+mov a, #0xC0
+lcall ?WriteCommand
+mov a, #0x01
+lcall ?WriteData
+
 lcall eighth
-Set_Cursor(2,7)
+mov a, #0xC4
+lcall ?WriteCommand
+mov a, #2H
+lcall ?WriteData
+
 lcall heart
-Set_Cursor(2,10)
+mov a, #0xC8
+lcall ?WriteCommand
+mov a, #3H
+lcall ?WriteData
+
 lcall bell
+mov a, #0xC9
+lcall ?WriteCommand
+mov a, #4H
+lcall ?WriteData
+
 Wait_Milli_Seconds(#250)
 
-sjmp forever
+Set_Cursor(1,1)
+Send_Constant_String(#clear_screen)
+Set_Cursor(2,1)
+Send_Constant_String(#clear_screen)
+
+ljmp forever
 END
