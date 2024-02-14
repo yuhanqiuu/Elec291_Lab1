@@ -31,7 +31,6 @@ LCD_D5 equ P0.1
 LCD_D6 equ P0.2
 LCD_D7 equ P0.3
 
-
 ; When using a 16.6MHz oscillator in the N76E003
 ; one cycle takes 1.0/16.6MHz = 60.24 ns
 
@@ -116,66 +115,56 @@ LCD_byte:
 ; Configure LCD in 4-bit mode     ;
 ;---------------------------------;
 LCD_4BIT:
-clr LCD_E ; Resting state of LCD's enable is zero
-; clr LCD_RW ; Not used, pin tied to GND
-; After power on, wait for the LCD start up time before initializing
-mov R2, #40
-lcall WaitmilliSec
-; First make sure the LCD is in 8-bit mode and then change to 4-bit mode
-mov a, #0x33
-lcall WriteCommand
-mov a, #0x33
-lcall WriteCommand
-mov a, #0x32 ; change to 4-bit mode
-lcall WriteCommand
-; Configure the LCD
-mov a, #0x28
-lcall WriteCommand
-mov a, #0x0c
-lcall WriteCommand
-mov a, #0x01 ; Clear screen command (takes some time)
-lcall WriteCommand
-;Wait for clear screen command to finish. Usually takes 1.52ms.
-mov R2, #2
-lcall WaitmilliSec
-ret
+    clr LCD_E   ; Resting state of LCD's enable is zero
+    ; clr LCD_RW  ; Not used, pin tied to GND
+
+    ; After power on, wait for the LCD start up time before initializing
+    mov R2, #40
+    lcall WaitmilliSec
+
+    ; First make sure the LCD is in 8-bit mode and then change to 4-bit mode
+    mov a, #0x33
+    lcall WriteCommand
+    mov a, #0x33
+    lcall WriteCommand
+    mov a, #0x32 ; change to 4-bit mode
+    lcall WriteCommand
+
+    ; Configure the LCD
+    mov a, #0x28
+    lcall WriteCommand
+    mov a, #0x0c
+    lcall WriteCommand
+    mov a, #0x01 ;  Clear screen command (takes some time)
+    lcall WriteCommand
+
+    ;Wait for clear screen command to finish. Usually takes 1.52ms.
+    mov R2, #2
+    lcall WaitmilliSec
+    ret
+
 ;---------------------------------;
 ; Main loop.  Initialize stack,   ;
 ; ports, LCD, and displays        ;
-; letters on the LCD              ; 
+; letters on the LCD              ;
 ;---------------------------------;
 myprogram:
-mov SP, #7FH
-; Configure the pins as bi-directional so we can use them as input/output
-mov P0M1, #0x00
-mov P0M2, #0x00
-mov P1M1, #0x00
-mov P1M2, #0x00
-mov P3M2, #0x00
-mov P3M2, #0x00
-lcall LCD_4BIT
-mov a, #0x80 ; Move cursor to line 1 column 1
-lcall WriteCommand
-mov dptr, #name
-lcall Display_String
-
-mov a, #0xC0 ; Move cursor to line 2 column 1
-lcall WriteCommand
-mov dptr, #student_number
-lcall Display_String
-
-lcall scroll
-
-scroll:
-mov a, #0x18
-lcall WriteCommand
-mov a, #0x10
-lcall WriteCommand
-lcall WaitmilliSec
-sjmp scroll
-
+    mov SP, #7FH
+    ; Configure the pins as bi-directional so we can use them as input/output
+    mov P0M1, #0x00
+    mov P0M2, #0x00
+    mov P1M1, #0x00
+    mov P1M2, #0x00
+    mov P3M2, #0x00
+    mov P3M2, #0x00
+    
+    lcall LCD_4BIT
+    mov a, #0x80 ; Move cursor to line 1 column 1
+    lcall WriteCommand
+    mov a, #'Y'
+    lcall WriteData
+    
+   
 forever:
     sjmp forever
-  
 END
-
