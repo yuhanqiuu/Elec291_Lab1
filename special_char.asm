@@ -119,10 +119,6 @@ bell:
     lcall ?WriteData   ;Send the data
     ret                  ;Return from routine
 
-clear_bit:
-    lcall ?WriteCommand
-    mov a, #' '
-    lcall ?WriteData
 ;---------------------------------;
 ; Main loop. Initialize stack, ;
 ; ports, LCD, and displays ;
@@ -138,59 +134,40 @@ mov P1M2, #0x00
 mov P3M2, #0x00
 mov P3M2, #0x00
 lcall LCD_4BIT
-; mov a, #0x80 ; Move cursor to line 1 column 1
-; lcall WriteCommand
-; mov dptr, #name
-; lcall Display_String
-
-; mov a, #0xC0 ; Move cursor to line 2 column 1
-; lcall WriteCommand
-; mov dptr, #student_number
-; lcall Display_String
-
-
-;lcall scroll
-
-; scroll:
-; mov a, #0x18
-; lcall WriteCommand
-; mov a, #0x10
-; lcall WriteCommand
-; lcall WaitmilliSec
-; sjmp scroll
 
 forever:
 lcall heart
 mov a, #0x81
 lcall ?WriteCommand
-mov a, #0x01
+mov a, #3H
 lcall ?WriteData
 
 lcall eighth
-mov a, #0xC5
+mov a, #0xC4
 lcall ?WriteCommand
 mov a, #2H
 lcall ?WriteData
 
 lcall bell
-mov a, #0x88
-lcall ?WriteCommand
-mov a, #3H
-lcall ?WriteData
-
-lcall double_eighth
-mov a, #0xCB
+mov a, #0x87
 lcall ?WriteCommand
 mov a, #4H
 lcall ?WriteData
 
-lcall heart
-mov a, #0x8E
+lcall double_eighth
+mov a, #0xCA
 lcall ?WriteCommand
-mov a, #5H
+mov a, #1H
+lcall ?WriteData
+
+lcall heart
+mov a, #0x8D
+lcall ?WriteCommand
+mov a, #3H
 lcall ?WriteData
 
 Wait_Milli_Seconds(#250)
+Wait_Milli_Seconds(#70)
 
 Set_Cursor(1,1)
 Send_Constant_String(#clear_screen)
@@ -198,37 +175,37 @@ Set_Cursor(2,1)
 Send_Constant_String(#clear_screen)
 
 lcall heart
-mov a, #0xC2
+mov a, #0xC0
 lcall ?WriteCommand
-mov a, #0x01
+mov a, #3H
 lcall ?WriteData
 
 lcall eighth
-mov a, #0x85
+mov a, #0x83
 lcall ?WriteCommand
 mov a, #2H
 lcall ?WriteData
 
 lcall bell
-mov a, #0xC8
+mov a, #0xC7
 lcall ?WriteCommand
-mov a, #3H
+mov a, #4H
 lcall ?WriteData
 
 lcall double_eighth
 mov a, #0x8B
 lcall ?WriteCommand
-mov a, #4H
+mov a, #1H
 lcall ?WriteData
 
 lcall heart
 mov a, #0xCE
 lcall ?WriteCommand
-mov a, #5H
+mov a, #3H
 lcall ?WriteData
 
 Wait_Milli_Seconds(#250)
-
+Wait_Milli_Seconds(#70)
 Set_Cursor(1,1)
 Send_Constant_String(#clear_screen)
 Set_Cursor(2,1)
