@@ -331,25 +331,25 @@ LCD_PB_Done:
 increment_soak_temp:
 	inc soak_temp
 	mov a, soak_temp
-	cjne a, #240, LCD_PB_Done
+	cjne a, #0xF0, LCD_PB_Done
 	mov soak_temp, #0x00
 	sjmp LCD_PB_Done
 increment_soak_time:
 	inc soak_time
 	mov a, soak_time
-	cjne a, #120, LCD_PB_Done
+	cjne a, #0x78, LCD_PB_Done
 	mov soak_time, #0x00
 	sjmp LCD_PB_Done
 increment_reflow_temp: 
 	inc reflow_temp
 	mov a, reflow_temp
-	cjne a, #240, LCD_PB_Done
+	cjne a, #0xF0, LCD_PB_Done
 	mov reflow_temp, #0x00
 	sjmp LCD_PB_Done
 increment_reflow_time:
 	inc reflow_time
 	mov a, reflow_time
-	cjne a, #75, LCD_PB_Done
+	cjne a, #0x4B, LCD_PB_Done
 	mov reflow_time, #0x00
 	sjmp LCD_PB_Done
 
@@ -362,14 +362,64 @@ start_stop:
 ; four decimal places.
 Display_formated_BCD:
 	Set_Cursor(1, 4) ; display To
-	Display_BCD(bcd+4)
-	Display_BCD(bcd+3) ;this is just in case temperatures exceed 100C and we're in deg F
-	Display_BCD(bcd+2)
+	Display_BCD(bcd+3)
+	Display_BCD(bcd+2) ;this is just in case temperatures exceed 100C and we're in deg F
 
+	;send the BCD value to the MATLAB script
+	Send_BCD(bcd+3)
+	Send_BCD(bcd+2)
+	Send_BCD(bcd+1)
+	mov a, #'\r'
+	lcall putchar
+	mov a, #'\n'
+	lcall putchar
 	;Set_Cursor(1, 13)
 	;Send_Constant_String(#22) ; display Tj=22
 	ret
 
+SendToLCD:
+mov b, #100
+div ab
+orl a, #0x30 ; Convert hundreds to ASCII
+lcall ?WriteData ; Send to LCD
+mov a, b ; Remainder is in register b
+mov b, #10
+div ab
+orl a, #0x30 ; Convert tens to ASCII
+lcall ?WriteData; Send to LCD
+mov a, b
+orl a, #0x30 ; Convert units to ASCII
+lcall ?WriteData; Send to LCD
+ret
+
+;-------------------------------------------------;
+; Display values from the pushbutton to the LCD   ;
+;-------------------------------------------------;
+
+Display_PushButtons_LCD:
+	Set_Cursor(2, 2)
+	mov x+0, soak_temp
+	mov x+1,#0
+	mov x+2,#0
+	mov x+3,#0
+	lcall
+	mov a, soak_temp
+	lcall SendToLCD
+	
+	Set_Cursor(2, 6)
+	mov a, soak_time
+	lcall SendToLCD
+    
+    Set_Cursor(2, 10)
+    mov a, reflow_temp
+	lcall SendToLCD
+    
+    Set_Cursor(2, 14)
+    mov a, reflow_time
+	lcall SendToLCD
+	
+		
+	ret
 
 ;-------------------------------------------------;
 ; Display all values and temperatures to the LCD  ;
@@ -432,15 +482,7 @@ Display_Data:
 	lcall hex2bcd
 	lcall Display_formated_BCD
 	
-	;send the BCD value to the MATLAB script
-	Send_BCD(bcd+3)
-	Send_BCD(bcd+2)
-	Send_BCD(bcd+1)
-	Send_BCD(bcd)
-	mov a, #'\r'
-	lcall putchar
-	mov a, #'\n'
-	lcall putchar
+	
 	
 	; Wait 500 ms between conversions
 	mov R2, #250
@@ -463,11 +505,11 @@ main:
 	Set_Cursor(2, 1)
     Send_Constant_String(#Time_temp_display)
 	
-	mov seconds, #0
-	mov soak_temp, #140 
-	mov soak_time, #60
-	mov reflow_temp, #230
-	mov reflow_time, #30
+	mov seconds, #0x00
+	mov soak_temp, #0x8C ;140
+	mov soak_time, #0x3C ; 60
+	mov reflow_temp, #0xE6 ; 230
+	mov reflow_time, #0x1E ; 30
 	setb TR2
     
 ;---------------------------------;
@@ -478,7 +520,8 @@ FSM:
 FSM_state0:
     cjne a, #0, FSM_state1
     mov pwm, #0 ; power variable
-
+	lcall LCD_PB ; calls and checks the pushbuttons
+	lcall Display_PushButtons_LCD ;Displays values in pushbuttons
     jnb start_stop_flag, FSM_state0_done
     mov seconds, #0     ; set time to 0
     mov FSM_state, #1   ; set FSM_state to 1, next state is state1
