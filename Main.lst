@@ -27,7 +27,7 @@
 0000             29   ;---------------------------------;
 0000             30   ; Define any buttons & pins here  ;
 0000             31   ;---------------------------------;
-0000             32   SOUND_OUT   equ p1.7 ; speaker pin
+0000             32   SOUND_OUT   equ p1.2 ; speaker pin
 0000             33   PWM_OUT    EQU P1.0 ; Logic 1 = oven on
 0000             34   ;---------------------------------------------
 0000             35   
@@ -172,7 +172,7 @@
 03F0 758CF0     154            mov TH0, #high(TIMER0_RELOAD)
 03F3 758A2C     155            mov TL0, #low(TIMER0_RELOAD)
 03F6 D28C       156            setb TR0
-03F8 B297       157            cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
+03F8 B292       157            cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
 03FA 32         158            reti
 03FB            159   
 03FB            160   ;---------------------------------;

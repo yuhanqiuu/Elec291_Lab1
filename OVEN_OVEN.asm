@@ -83,7 +83,7 @@ MUTE_KEY EQU 0
 ;---------------------------------;
 ; Define any buttons & pins here  ;
 ;---------------------------------;
-SOUND_OUT   EQU P1.7 ; speaker pin
+SOUND_OUT   EQU P1.2 ; speaker pin
 PWM_OUT    EQU P1.0 ; Logic 1 = oven on
 ;---------------------------------------------
 
@@ -394,7 +394,6 @@ Init_All:
 	orl	TMOD, #0x20 ; Timer 1 Mode 2
 	mov	TH1, #TIMER1_RELOAD ; TH1=TIMER1_RELOAD;
 	setb TR1
-	
 	; Using timer 0 for delay functions.  Initialize here:
 	;clr	TR0 ; Stop timer 0
 	orl	CKCON,#0x08 ; CLK is the input for timer 0
@@ -883,7 +882,7 @@ main:
 	
 	clr start_stop_flag
 	clr FSM_start_flag
-    
+    clr TR0
 ;---------------------------------;
 ; 		FSM	funtion			      ;
 ;---------------------------------;
@@ -901,7 +900,7 @@ FSM_state0: ;initial state
     mov FSM_state, #1   ; set FSM_state to 1, next state is state1
     Set_Cursor(2, 1)
     Send_Constant_String(#Ramp_to_soak)
-
+	Wait_Milli_Seconds(#250)
 
 FSM_state0_done:
     ljmp FSM   ;jump back to FSM and reload FSM_state to a
@@ -1033,13 +1032,12 @@ intermediate_state_0:
 FSM_state6:
 	cjne a, #6, intermediate_state_0
 	clr TR2
+	setb TR0
 	setb ET0
 
     lcall Display_special_char1
-    clr TR0 
 	mov Melody_Reload+1, #high(B3_KEY)
 	mov Melody_Reload+0, #low(B3_KEY)
-    setb TR0
 	Wait_Milli_Seconds(#120)
 
 	mov Melody_Reload+1, #high(A3_KEY)
