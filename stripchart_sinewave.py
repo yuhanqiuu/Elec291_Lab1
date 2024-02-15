@@ -2,21 +2,32 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import sys, time, math
-
-import serial
+import pandas as pd
 
 xsize=100
-   
+
+import time 
+import serial 
+
+# configure the serial port 
+ser = serial.Serial( 
+ port='COM11', 
+ baudrate=115200, 
+ parity=serial.PARITY_NONE, 
+ stopbits=serial.STOPBITS_TWO, 
+ bytesize=serial.EIGHTBITS 
+) 
+ 
+data_list = []  
 def data_gen():
     t = data_gen.t
     while True:
-        t += 1
-        # Read data from serial port (COM5)
-        try:
-            val = float(ser.readline().decode().strip()) / 10000
-        except ValueError:
-            continue  # Skip invalid data
+        t+=1
+        val = int(ser.readline())
+        val= val/10000
+        # strin = strin.decode()
         yield t, val
+        data_list.append({'time':t,'value':val})
 
 def run(data):
     # update the data
@@ -31,18 +42,16 @@ def run(data):
     return line,
 
 def on_close_figure(event):
+    df = pd.DataFrame(data_list)
+    df.to_excel("OvenVal.xlsx", index = False)
     sys.exit(0)
 
 data_gen.t = -1
-
-# Open serial port
-ser = serial.Serial('COM6', 115200)
-
 fig = plt.figure()
 fig.canvas.mpl_connect('close_event', on_close_figure)
 ax = fig.add_subplot(111)
 line, = ax.plot([], [], lw=2)
-ax.set_ylim(0, 300)
+ax.set_ylim(-100, 300)
 ax.set_xlim(0, xsize)
 ax.grid()
 xdata, ydata = [], []
