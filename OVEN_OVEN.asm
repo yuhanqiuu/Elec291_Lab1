@@ -951,11 +951,12 @@ FSM_state2: ;preheat/soak
     Set_Cursor(2, 1)
     Send_Constant_String(#Soak_display)
     clr c   ; ! i don't know what is c 
+	lcall check_stop
+    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
 	jnb s_flag, FSM_state2_done
 	clr s_flag
 	lcall Display_Data
-	lcall check_stop
-    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+	
 	mov a, soak_time    ; set a to soak time
     subb a, seconds    ; temp is our currect sec
     jnc FSM_state2_done
@@ -992,11 +993,12 @@ FSM_state4:;reflow
     Set_Cursor(2, 1)
     Send_Constant_String(#Reflow_display)
     clr c   ; ! i don't know what is c 
+	lcall check_stop
+    jnb start_stop_flag, intermediate_stop_jump; checks the flag if 0, then means stop was pressed, if 1 keep on going
 	jnb s_flag, FSM_state4_done
 	clr s_flag
 	lcall Display_Data
-	lcall check_stop
-    jnb start_stop_flag, intermediate_stop_jump; checks the flag if 0, then means stop was pressed, if 1 keep on going
+	
 	mov a, reflow_time    ; set a to reflow time
     subb a, seconds    ; temp is our currect sec
     jnc FSM_state4_done
