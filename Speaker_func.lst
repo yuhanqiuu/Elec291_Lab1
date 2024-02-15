@@ -77,7 +77,7 @@
 0000             79   
 0000             80   ; Reset vector
 0000             81   org 0x0000
-0000 0202A4      82       ljmp main
+0000 0202D7      82       ljmp main
 0003             83   
 0003             84   ; External interrupt 0 vector (not used in this code)
 0003             85   org 0x0003
@@ -85,7 +85,7 @@
 0004             87   
 0004             88   ; Timer/Counter 0 overflow interrupt vector
 000B             89   org 0x000B
-000B 020126      90            ljmp Timer0_ISR
+000B 02020D      90            ljmp Timer0_ISR
 000E             91   
 000E             92   ; External interrupt 1 vector (not used in this code)
 0013             93   org 0x0013
@@ -132,582 +132,606 @@
      20202020
      20202020
      00
-0118            131   ;---------------------------------;
-0118            132   ; Routine to initialize the ISR   ;
-0118            133   ; for timer 0                     ;
+0118            131   
+0118            132   ;---------------------------------;
+0118            133   ; Define special chars here       ;
 0118            134   ;---------------------------------;
-0118            135   Timer0_Init:
-0118 438E08     136            orl CKCON, #0b00001000 ; Input for timer 0 is sysclk/1
-011B E589       137            mov a, TMOD
-011D 54F0       138            anl a, #0xf0 ; 11110000 Clear the bits for timer 0
-011F 4401       139            orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
-0121 F589       140            mov TMOD, a
-0123            141            ;mov TH0, #high(B3_KEY)
-0123            142            ;mov TL0, #low(B3_KEY)
-0123            143            ; Enable the timer and interrupts
-0123            144       ;setb ET0  ; Enable timer 0 interrupt
-0123 D28C       145       setb TR0  ; Start timer 0
-0125 22         146            ret
-0126            147   
-0126            148   ;---------------------------------;
-0126            149   ; ISR for timer 0.  Set to execute;
-0126            150   ; every 1/4096Hz to generate a    ;
-0126            151   ; 2048 Hz wave at pin SOUND_OUT   ;
-0126            152   ;---------------------------------;
-0126            153   Timer0_ISR:
-0126            154            ;clr TF0  ; According to the data sheet this is done for us already.
-0126            155            ; Timer 0 doesn't have 16-bit auto-reload, so
-0126 C28C       156            clr TR0
-0128            157            ;mov TH0, #high(TIMER0_RELOAD)
-0128            158            ;mov TL0, #low(TIMER0_RELOAD)
-0128 85338C     159            mov TH0, Melody_Reload+1
-012B 85328A     160            mov TL0, Melody_Reload+0
-012E D28C       161            setb TR0
-0130 B297       162            cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
-0132 32         163            reti
-0133            164   
-0133            165   double_eighth:
-0133 7448       166       mov   A,#48H         ;Load the location where we want to store
-0135 120078     167       lcall ?WriteCommand    ;Send the command
-0138 7400       168       mov   A,#00H         ;Load row 1 data
-013A 120073     169       lcall ?WriteData   ;Send the data
-013D 740F       170       mov   A,#0FH         ;Load row 2 data
-013F 120073     171       lcall ?WriteData   ;Send the data
-0142 7409       172       mov   A,#09H         ;Load row 3 data
-0144 120073     173       lcall ?WriteData   ;Send the data
-0147 7409       174       mov   A,#09H         ;Load row 4 data
-0149 120073     175       lcall ?WriteData   ;Send the data
-014C 741B       176       mov   A,#1BH         ;Load row 5 data
-014E 120073     177       lcall ?WriteData   ;Send the data
-0151 741B       178       mov   A,#1BH         ;Load row 6 data
-0153 120073     179       lcall ?WriteData   ;Send the data
-0156 7400       180       mov   A,#00H         ;Load row 7 data
-0158 1173       181       acall ?WriteData   ;Send the data
-015A 7400       182       mov   A,#00H         ;Load row 8 data
-015C 120073     183       lcall ?WriteData   ;Send the data
-015F 22         184       ret                  ;Return from routine
-0160            185       
-0160            186   eighth:
-0160 7450       187       mov   A,#50H         ;Load the location where we want to store
-0162 120078     188       lcall ?WriteCommand    ;Send the command
-0165 7404       189       mov   A,#04H         ;Load row 1 data
-0167 120073     190       lcall ?WriteData   ;Send the data
-016A 7406       191       mov   A,#06H         ;Load row 2 data
-016C 120073     192       lcall ?WriteData   ;Send the data
-016F 7405       193       mov   A,#05H         ;Load row 3 data
-0171 120073     194       lcall ?WriteData   ;Send the data
-0174 7404       195       mov   A,#04H         ;Load row 4 data
-0176 120073     196       lcall ?WriteData   ;Send the data
-0179 740C       197       mov   A,#0CH         ;Load row 5 data
-017B 120073     198       lcall ?WriteData   ;Send the data
-017E 7414       199       mov   A,#14H         ;Load row 6 data
-0180 120073     200       lcall ?WriteData   ;Send the data
-0183 7408       201       mov   A,#08H         ;Load row 7 data
-0185 1173       202       acall ?WriteData   ;Send the data
-0187 7400       203       mov   A,#00H         ;Load row 8 data
-0189 120073     204       lcall ?WriteData   ;Send the data
-018C 22         205       ret                  ;Return from routine
-018D            206   
-018D            207   heart:
-018D 7458       208       mov   A,#58H         ;Load the location where we want to store
-018F 120078     209       lcall ?WriteCommand    ;Send the command
-0192 7400       210       mov   A,#00H         ;Load row 1 data
-0194 120073     211       lcall ?WriteData   ;Send the data
-0197 740A       212       mov   A,#0AH         ;Load row 2 data
-0199 120073     213       lcall ?WriteData   ;Send the data
-019C 7415       214       mov   A,#15H         ;Load row 3 data
-019E 120073     215       lcall ?WriteData   ;Send the data
-01A1 7411       216       mov   A,#11H         ;Load row 4 data
-01A3 120073     217       lcall ?WriteData   ;Send the data
-01A6 7411       218       mov   A,#11H         ;Load row 5 data
-01A8 120073     219       lcall ?WriteData   ;Send the data
-01AB 740A       220       mov   A,#0AH         ;Load row 6 data
-01AD 120073     221       lcall ?WriteData   ;Send the data
-01B0 7404       222       mov   A,#04H         ;Load row 7 data
-01B2 1173       223       acall ?WriteData   ;Send the data
-01B4 7400       224       mov   A,#00H         ;Load row 8 data
-01B6 120073     225       lcall ?WriteData   ;Send the data
-01B9 22         226       ret                  ;Return from routine
-01BA            227   bell:
-01BA 7460       228       mov   A,#60H         ;Load the location where we want to store
-01BC 120078     229       lcall ?WriteCommand    ;Send the command
-01BF 7400       230       mov   A,#00H         ;Load row 1 data
-01C1 120073     231       lcall ?WriteData   ;Send the data
-01C4 7404       232       mov   A,#04H          ;Load row 2 data
-01C6 120073     233       lcall ?WriteData   ;Send the data
-01C9 740E       234       mov   A,#0eH          ;Load row 3 data
-01CB 120073     235       lcall ?WriteData   ;Send the data
-01CE 740E       236       mov   A,#0eH         ;Load row 4 data
-01D0 120073     237       lcall ?WriteData   ;Send the data
-01D3 740E       238       mov   A,#0eH         ;Load row 5 data
-01D5 120073     239       lcall ?WriteData   ;Send the data
-01D8 741F       240       mov   A,#1fH         ;Load row 6 data
-01DA 120073     241       lcall ?WriteData   ;Send the data
-01DD 7400       242       mov   A,#00H         ;Load row 7 data
-01DF 1173       243       acall ?WriteData   ;Send the data
-01E1 7404       244       mov   A,#04H         ;Load row 8 data
-01E3 120073     245       lcall ?WriteData   ;Send the data
-01E6 22         246       ret                  ;Return from routine
-01E7            247   
-01E7            248            
-01E7            249   Display_special_char1:
-01E7 12018D     250            lcall heart
-01EA 7481       251            mov a, #0x81
-01EC 120078     252            lcall ?WriteCommand
-01EF 7403       253            mov a, #3H
-01F1 120073     254            lcall ?WriteData
-01F4            255   
-01F4 120160     256            lcall eighth
-01F7 74C4       257            mov a, #0xC4
-01F9 120078     258            lcall ?WriteCommand
-01FC 7402       259            mov a, #2H
-01FE 120073     260            lcall ?WriteData
-0201            261   
-0201 1201BA     262            lcall bell
-0204 7487       263            mov a, #0x87
-0206 120078     264            lcall ?WriteCommand
-0209 7404       265            mov a, #4H
-020B 120073     266            lcall ?WriteData
-020E            267   
-020E 120133     268            lcall double_eighth
-0211 74CA       269            mov a, #0xCA
-0213 120078     270            lcall ?WriteCommand
-0216 7401       271            mov a, #1H
-0218 120073     272            lcall ?WriteData
-021B            273   
-021B 12018D     274            lcall heart
-021E 748D       275            mov a, #0x8D
-0220 120078     276            lcall ?WriteCommand
-0223 7403       277            mov a, #3H
-0225 120073     278            lcall ?WriteData
-0228 32         279            reti
-0229            280            
-0229            281   Display_special_char2:
-0229 12018D     282            lcall heart
-022C 74C0       283            mov a, #0xC0
-022E 120078     284            lcall ?WriteCommand
-0231 7403       285            mov a, #3H
-0233 120073     286            lcall ?WriteData
-0236            287   
-0236 120160     288            lcall eighth
-0239 7483       289            mov a, #0x83
-023B 120078     290            lcall ?WriteCommand
-023E 7402       291            mov a, #2H
-0240 120073     292            lcall ?WriteData
-0243            293   
-0243 1201BA     294            lcall bell
-0246 74C7       295            mov a, #0xC7
-0248 120078     296            lcall ?WriteCommand
-024B 7404       297            mov a, #4H
-024D 120073     298            lcall ?WriteData
-0250            299   
-0250 120133     300            lcall double_eighth
-0253 748B       301            mov a, #0x8B
-0255 120078     302            lcall ?WriteCommand
-0258 7401       303            mov a, #1H
-025A 120073     304            lcall ?WriteData
-025D            305   
-025D 12018D     306            lcall heart
-0260 74CE       307            mov a, #0xCE
-0262 120078     308            lcall ?WriteCommand
-0265 7403       309            mov a, #3H
-0267 120073     310            lcall ?WriteData
-026A 32         311            reti
-026B            312   
-026B            313   clear_screen_func:
-026B            314       
-026B C0E0       315            push acc
-026D 7401       315            mov a, #1
-026F 14         315            dec a
-0270 1200BD     315            lcall ?Set_Cursor_1 ; Select column and row
-0273 D0E0       315            pop acc
-0275 C083       316            push dph
-0277 C082       316            push dpl
-0279 C0E0       316            push acc
-027B 900107     316            mov dptr, #clear_screen
-027E 1200B0     316            lcall ?Send_Constant_String
-0281 D0E0       316            pop acc
-0283 D082       316            pop dpl
-0285 D083       316            pop dph
-0287 C0E0       317            push acc
-0289 7401       317            mov a, #1
-028B 14         317            dec a
-028C 1200BB     317            lcall ?Set_Cursor_2 ; Select column and row
-028F D0E0       317            pop acc
-0291 C083       318            push dph
-0293 C082       318            push dpl
-0295 C0E0       318            push acc
-0297 900107     318            mov dptr, #clear_screen
-029A 1200B0     318            lcall ?Send_Constant_String
-029D D0E0       318            pop acc
-029F D082       318            pop dpl
-02A1 D083       318            pop dph
-02A3 22         319       ret
-02A4            320       
-02A4            321   ;---------------------------------;
-02A4            322   ; Main program. Includes hardware ;
-02A4            323   ; initialization and 'forever'    ;
-02A4            324   ; loop.                           ;
-02A4            325   ;---------------------------------;
-02A4            326   main:
-02A4            327            ; Initialization
-02A4 75817F     328       mov SP, #0x7F
-02A7 75B100     329       mov P0M1, #0x00
-02AA 75B200     330       mov P0M2, #0x00
-02AD 75B300     331       mov P1M1, #0x00
-02B0 75B400     332       mov P1M2, #0x00
-02B3 75AD00     333       mov P3M2, #0x00
-02B6 75AD00     334       mov P3M2, #0x00
-02B9            335       
-02B9 D2AF       336       setb EA   ; Enable Global interrupts
-02BB 12007D     337       lcall LCD_4BIT
-02BE C083       338            push dph
-02C0 C082       338            push dpl
-02C2 C0E0       338            push acc
-02C4 9000F6     338            mov dptr, #Initial_Message
-02C7 1200B0     338            lcall ?Send_Constant_String
-02CA D0E0       338            pop acc
-02CC D082       338            pop dpl
-02CE D083       338            pop dph
-02D0            339   
-02D0            340   Turkish_March:
-02D0 D2A9       341            setb ET0
-02D2            342   
-02D2            343       ;lcall Display_special_char1
-02D2            344   
-02D2 75337C     345            mov Melody_Reload+1, #high(B3_KEY)
-02D5 7532BD     346            mov Melody_Reload+0, #low(B3_KEY)
-02D8 C002       347            push AR2
-02DA 7A78       347            mov R2, #120
-02DC 12002E     347            lcall ?Wait_Milli_Seconds
-02DF D002       347            pop AR2
-02E1            348   
-02E1 75336C     349            mov Melody_Reload+1, #high(A3_KEY)
-02E4 7532A1     350            mov Melody_Reload+0, #low(A3_KEY)
-02E7 C002       351            push AR2
-02E9 7A78       351            mov R2, #120
-02EB 12002E     351            lcall ?Wait_Milli_Seconds
-02EE D002       351            pop AR2
-02F0            352   
-02F0 753363     353            mov Melody_Reload+1, #high(Gs3_KEY)
-02F3 7532C0     354            mov Melody_Reload+0, #low(Gs3_KEY)
-02F6 C002       355            push AR2
-02F8 7A78       355            mov R2, #120
-02FA 12002E     355            lcall ?Wait_Milli_Seconds
-02FD D002       355            pop AR2
-02FF            356            
-02FF 75336C     357            mov Melody_Reload+1, #high(A3_KEY)
-0302 7532A1     358            mov Melody_Reload+0, #low(A3_KEY)
-0305 C002       359            push AR2
-0307 7A78       359            mov R2, #120
-0309 12002E     359            lcall ?Wait_Milli_Seconds
-030C D002       359            pop AR2
-030E            360   
-030E 12026B     361            lcall clear_screen_func
-0311            362   ;----------------------------------------
-0311 120229     363            lcall Display_special_char2
-0314            364   
-0314 753384     365            mov Melody_Reload+1, #high(C4_KEY)
-0317 753205     366            mov Melody_Reload+0, #low(C4_KEY)
-031A C002       367            push AR2
-031C 7AF0       367            mov R2, #240
-031E 12002E     367            lcall ?Wait_Milli_Seconds
-0321 D002       367            pop AR2
-0323 C002       368            push AR2
-0325 7AF0       368            mov R2, #240
-0327 12002E     368            lcall ?Wait_Milli_Seconds
-032A D002       368            pop AR2
-032C            369            
-032C 12026B     370       lcall clear_screen_func
-032F 1201E7     371       lcall Display_special_char1
-0332            372       
-0332 753384     373            mov Melody_Reload+1, #high(D4_KEY)
-0335 753205     374            mov Melody_Reload+0, #low(D4_KEY)
-0338 C002       375            push AR2
-033A 7A78       375            mov R2, #120
-033C 12002E     375            lcall ?Wait_Milli_Seconds
-033F D002       375            pop AR2
-0341            376   
-0341 753384     377            mov Melody_Reload+1, #high(C4_KEY)
-0344 753205     378            mov Melody_Reload+0, #low(C4_KEY)
-0347 C002       379            push AR2
-0349 7A78       379            mov R2, #120
-034B 12002E     379            lcall ?Wait_Milli_Seconds
-034E D002       379            pop AR2
-0350            380   
-0350 7533BE     381            mov Melody_Reload+1, #high(B4_KEY)
-0353 75325F     382            mov Melody_Reload+0, #low(B4_KEY)
-0356 C002       383            push AR2
-0358 7A78       383            mov R2, #120
-035A 12002E     383            lcall ?Wait_Milli_Seconds
-035D D002       383            pop AR2
-035F            384   
-035F 7533C2     385            mov Melody_Reload+1, #high(C5_KEY)
-0362 753212     386            mov Melody_Reload+0, #low(C5_KEY)
-0365 C002       387            push AR2
-0367 7A78       387            mov R2, #120
-0369 12002E     387            lcall ?Wait_Milli_Seconds
-036C D002       387            pop AR2
-036E            388   
-036E 12026B     389            lcall clear_screen_func
-0371 120229     390       lcall Display_special_char2
-0374            391            
-0374 7533CE     392            mov Melody_Reload+1, #high(E5_KEY)
-0377 7532D7     393            mov Melody_Reload+0, #low(E5_KEY)
-037A C002       394            push AR2
-037C 7AF0       394            mov R2, #240
-037E 12002E     394            lcall ?Wait_Milli_Seconds
-0381 D002       394            pop AR2
-0383 C002       395            push AR2
-0385 7AF0       395            mov R2, #240
-0387 12002E     395            lcall ?Wait_Milli_Seconds
-038A D002       395            pop AR2
-038C            396   
-038C 12026B     397            lcall clear_screen_func
-038F 1201E7     398       lcall Display_special_char1
-0392            399   ;-----------------------------------------
-0392 7533D1     400            mov Melody_Reload+1, #high(F5_KEY)
-0395 753296     401            mov Melody_Reload+0, #low(F5_KEY)
-0398 C002       402            push AR2
-039A 7A78       402            mov R2, #120
-039C 12002E     402            lcall ?Wait_Milli_Seconds
-039F D002       402            pop AR2
-03A1            403   
-03A1 7533CE     404            mov Melody_Reload+1, #high(E5_KEY)
-03A4 7532D7     405            mov Melody_Reload+0, #low(E5_KEY)
-03A7 C002       406            push AR2
-03A9 7A78       406            mov R2, #120
-03AB 12002E     406            lcall ?Wait_Milli_Seconds
-03AE D002       406            pop AR2
-03B0            407   
-03B0 7533CB     408            mov Melody_Reload+1, #high(Ds5_KEY)
-03B3 7532EB     409            mov Melody_Reload+0, #low(Ds5_KEY)
-03B6 C002       410            push AR2
-03B8 7A78       410            mov R2, #120
-03BA 12002E     410            lcall ?Wait_Milli_Seconds
-03BD D002       410            pop AR2
-03BF            411   
-03BF 7533CE     412            mov Melody_Reload+1, #high(E5_KEY)
-03C2 7532D7     413            mov Melody_Reload+0, #low(E5_KEY)
-03C5 C002       414            push AR2
-03C7 7A78       414            mov R2, #120
-03C9 12002E     414            lcall ?Wait_Milli_Seconds
-03CC D002       414            pop AR2
-03CE            415   
-03CE 12026B     416            lcall clear_screen_func
-03D1 120229     417       lcall Display_special_char2
-03D4            418   ;-----------------------------------------
-03D4 7533DF     419            mov Melody_Reload+1, #high(B5_KEY)
-03D7 753230     420            mov Melody_Reload+0, #low(B5_KEY)
-03DA C002       421            push AR2
-03DC 7A78       421            mov R2, #120
-03DE 12002E     421            lcall ?Wait_Milli_Seconds
-03E1 D002       421            pop AR2
-03E3            422   
-03E3 7533DB     423            mov Melody_Reload+1, #high(A5_KEY)
-03E6 753229     424            mov Melody_Reload+0, #low(A5_KEY)
-03E9 C002       425            push AR2
-03EB 7A78       425            mov R2, #120
-03ED 12002E     425            lcall ?Wait_Milli_Seconds
-03F0 D002       425            pop AR2
-03F2            426   
-03F2 7533D8     427            mov Melody_Reload+1, #high(Gs5_KEY)
-03F5 7532F7     428            mov Melody_Reload+0, #low(Gs5_KEY)
-03F8 C002       429            push AR2
-03FA 7A78       429            mov R2, #120
-03FC 12002E     429            lcall ?Wait_Milli_Seconds
-03FF D002       429            pop AR2
-0401            430   
-0401 7533DB     431            mov Melody_Reload+1, #high(A5_KEY)
-0404 753229     432            mov Melody_Reload+0, #low(A5_KEY)
-0407 C002       433            push AR2
-0409 7A78       433            mov R2, #120
-040B 12002E     433            lcall ?Wait_Milli_Seconds
-040E D002       433            pop AR2
-0410            434   
-0410 12026B     435            lcall clear_screen_func
-0413 1201E7     436       lcall Display_special_char1
-0416            437   ;--------------------------------------
-0416 7533DF     438            mov Melody_Reload+1, #high(B5_KEY)
-0419 753230     439            mov Melody_Reload+0, #low(B5_KEY)
-041C C002       440            push AR2
-041E 7A78       440            mov R2, #120
-0420 12002E     440            lcall ?Wait_Milli_Seconds
-0423 D002       440            pop AR2
-0425            441   
-0425 7533DB     442            mov Melody_Reload+1, #high(A5_KEY)
-0428 753229     443            mov Melody_Reload+0, #low(A5_KEY)
-042B C002       444            push AR2
-042D 7A78       444            mov R2, #120
-042F 12002E     444            lcall ?Wait_Milli_Seconds
-0432 D002       444            pop AR2
-0434            445   
-0434 7533D8     446            mov Melody_Reload+1, #high(Gs5_KEY)
-0437 7532F7     447            mov Melody_Reload+0, #low(Gs5_KEY)
-043A C002       448            push AR2
-043C 7A78       448            mov R2, #120
-043E 12002E     448            lcall ?Wait_Milli_Seconds
-0441 D002       448            pop AR2
-0443            449   
-0443 7533DB     450            mov Melody_Reload+1, #high(A5_KEY)
-0446 753229     451            mov Melody_Reload+0, #low(A5_KEY)
-0449 C002       452            push AR2
-044B 7A78       452            mov R2, #120
-044D 12002E     452            lcall ?Wait_Milli_Seconds
-0450 D002       452            pop AR2
-0452            453   
-0452 12026B     454            lcall clear_screen_func
-0455 120229     455       lcall Display_special_char2
-0458            456   
-0458 7533E1     457            mov Melody_Reload+1, #high(C6_KEY)
-045B 753205     458            mov Melody_Reload+0, #low(C6_KEY)
-045E C002       459            push AR2
-0460 7AF0       459            mov R2, #240
-0462 12002E     459            lcall ?Wait_Milli_Seconds
-0465 D002       459            pop AR2
-0467 C002       460            push AR2
-0469 7AF0       460            mov R2, #240
-046B 12002E     460            lcall ?Wait_Milli_Seconds
-046E D002       460            pop AR2
-0470            461            
-0470 12026B     462            lcall clear_screen_func
-0473 1201E7     463       lcall Display_special_char1
-0476            464   ;----------------------------------------
-0476 7533DB     465            mov Melody_Reload+1, #high(A5_KEY)
-0479 753229     466            mov Melody_Reload+0, #low(A5_KEY)
-047C C002       467            push AR2
-047E 7AF0       467            mov R2, #240
-0480 12002E     467            lcall ?Wait_Milli_Seconds
-0483 D002       467            pop AR2
-0485            468   
-0485 7533E1     469            mov Melody_Reload+1, #high(C6_KEY)
-0488 753205     470            mov Melody_Reload+0, #low(C6_KEY)
-048B C002       471            push AR2
-048D 7AF0       471            mov R2, #240
-048F 12002E     471            lcall ?Wait_Milli_Seconds
-0492 D002       471            pop AR2
-0494            472   
-0494 12026B     473            lcall clear_screen_func
-0497 120229     474       lcall Display_special_char2
-049A            475   ;-----------------------------------------
-049A 7533DF     476            mov Melody_Reload+1, #high(B5_KEY)
-049D 753230     477            mov Melody_Reload+0, #low(B5_KEY)
-04A0 C002       478            push AR2
-04A2 7AF0       478            mov R2, #240
-04A4 12002E     478            lcall ?Wait_Milli_Seconds
-04A7 D002       478            pop AR2
-04A9            479   
-04A9 7533DB     480            mov Melody_Reload+1, #high(A5_KEY)
-04AC 753229     481            mov Melody_Reload+0, #low(A5_KEY)
-04AF C002       482            push AR2
-04B1 7AF0       482            mov R2, #240
-04B3 12002E     482            lcall ?Wait_Milli_Seconds
-04B6 D002       482            pop AR2
-04B8            483   
-04B8 12026B     484            lcall clear_screen_func
-04BB 1201E7     485       lcall Display_special_char1
-04BE            486   
-04BE 7533D6     487            mov Melody_Reload+1, #high(G5_KEY)
-04C1 753229     488            mov Melody_Reload+0, #low(A5_KEY)
-04C4 C002       489            push AR2
-04C6 7AF0       489            mov R2, #240
-04C8 12002E     489            lcall ?Wait_Milli_Seconds
-04CB D002       489            pop AR2
-04CD            490   
-04CD 7533DB     491            mov Melody_Reload+1, #high(A5_KEY)
-04D0 753229     492            mov Melody_Reload+0, #low(A5_KEY)
-04D3 C002       493            push AR2
-04D5 7AF0       493            mov R2, #240
-04D7 12002E     493            lcall ?Wait_Milli_Seconds
-04DA D002       493            pop AR2
-04DC            494   
-04DC 12026B     495            lcall clear_screen_func
-04DF 120229     496       lcall Display_special_char2
-04E2            497   ;-----------------------------------------
-04E2 7533DF     498            mov Melody_Reload+1, #high(B5_KEY)
-04E5 753230     499            mov Melody_Reload+0, #low(B5_KEY)
-04E8 C002       500            push AR2
-04EA 7AF0       500            mov R2, #240
-04EC 12002E     500            lcall ?Wait_Milli_Seconds
-04EF D002       500            pop AR2
-04F1            501   
-04F1 7533DB     502            mov Melody_Reload+1, #high(A5_KEY)
-04F4 753229     503            mov Melody_Reload+0, #low(A5_KEY)
-04F7 C002       504            push AR2
-04F9 7AF0       504            mov R2, #240
-04FB 12002E     504            lcall ?Wait_Milli_Seconds
-04FE D002       504            pop AR2
-0500            505   
-0500 12026B     506            lcall clear_screen_func
-0503 1201E7     507       lcall Display_special_char1
-0506            508   
-0506 7533D6     509            mov Melody_Reload+1, #high(G5_KEY)
-0509 753229     510            mov Melody_Reload+0, #low(A5_KEY)
-050C C002       511            push AR2
-050E 7AF0       511            mov R2, #240
-0510 12002E     511            lcall ?Wait_Milli_Seconds
-0513 D002       511            pop AR2
-0515            512   
-0515 7533DB     513            mov Melody_Reload+1, #high(A5_KEY)
-0518 753229     514            mov Melody_Reload+0, #low(A5_KEY)
-051B C002       515            push AR2
-051D 7AF0       515            mov R2, #240
-051F 12002E     515            lcall ?Wait_Milli_Seconds
-0522 D002       515            pop AR2
-0524            516   
-0524 12026B     517            lcall clear_screen_func
-0527 120229     518       lcall Display_special_char2
-052A            519   ;-----------------------------------------
-052A 7533DF     520            mov Melody_Reload+1, #high(B5_KEY)
-052D 753230     521            mov Melody_Reload+0, #low(B5_KEY)
-0530 C002       522            push AR2
-0532 7AF0       522            mov R2, #240
-0534 12002E     522            lcall ?Wait_Milli_Seconds
-0537 D002       522            pop AR2
-0539            523   
-0539 7533DB     524            mov Melody_Reload+1, #high(A5_KEY)
-053C 753229     525            mov Melody_Reload+0, #low(A5_KEY)
-053F C002       526            push AR2
-0541 7AF0       526            mov R2, #240
-0543 12002E     526            lcall ?Wait_Milli_Seconds
-0546 D002       526            pop AR2
-0548            527   
-0548 12026B     528            lcall clear_screen_func
-054B 1201E7     529       lcall Display_special_char1
-054E            530   
-054E 7533D6     531            mov Melody_Reload+1, #high(G5_KEY)
-0551 753229     532            mov Melody_Reload+0, #low(A5_KEY)
-0554 C002       533            push AR2
-0556 7AF0       533            mov R2, #240
-0558 12002E     533            lcall ?Wait_Milli_Seconds
-055B D002       533            pop AR2
-055D            534            
-055D 7533D4     535            mov Melody_Reload+1, #high(Fs5_KEY)
-0560 753230     536            mov Melody_Reload+0, #low(Fs5_KEY)
-0563 C002       537            push AR2
-0565 7AF0       537            mov R2, #240
-0567 12002E     537            lcall ?Wait_Milli_Seconds
-056A D002       537            pop AR2
-056C            538   
-056C 12026B     539            lcall clear_screen_func
-056F 120229     540       lcall Display_special_char2
-0572            541   
-0572 7533CE     542            mov Melody_Reload+1, #high(E5_KEY)
-0575 7532D7     543            mov Melody_Reload+0, #low(E5_KEY)
-0578 C002       544            push AR2
-057A 7AF0       544            mov R2, #240
-057C 12002E     544            lcall ?Wait_Milli_Seconds
-057F D002       544            pop AR2
-0581 C002       545            push AR2
-0583 7AF0       545            mov R2, #240
-0585 12002E     545            lcall ?Wait_Milli_Seconds
-0588 D002       545            pop AR2
-058A            546   
-058A 12026B     547            lcall clear_screen_func
-058D 1201E7     548       lcall Display_special_char1
-0590 22         549            ret
-0591            550   
-0591            551   forever:
-0591 C28C       552            clr TR0
-0593 80FC       553            sjmp forever
-0595            554   END
+0118            135   fire:
+0118 7440       136            mov   A,#40H         ;Load the location where we want to store
+011A 120078     137       lcall ?WriteCommand    ;Send the command
+011D 7409       138       mov   A,#09H         ;Load row 1 data
+011F 120073     139       lcall ?WriteData   ;Send the data
+0122 7400       140       mov   A,#00H         ;Load row 2 data
+0124 120073     141       lcall ?WriteData   ;Send the data
+0127 7414       142       mov   A,#14H         ;Load row 3 data
+0129 120073     143       lcall ?WriteData   ;Send the data
+012C 7406       144       mov   A,#06H         ;Load row 4 data
+012E 120073     145       lcall ?WriteData   ;Send the data
+0131 740F       146       mov   A,#0FH         ;Load row 5 data
+0133 120073     147       lcall ?WriteData   ;Send the data
+0136 741B       148       mov   A,#1BH         ;Load row 6 data
+0138 120073     149       lcall ?WriteData   ;Send the data
+013B 7411       150       mov   A,#11H         ;Load row 7 data
+013D 1173       151       acall ?WriteData   ;Send the data
+013F 740E       152       mov   A,#0EH         ;Load row 8 data
+0141 120073     153       lcall ?WriteData   ;Send the data
+0144 22         154       ret                  ;Return from routine
+0145            155   
+0145            156   double_eighth:
+0145 7448       157       mov   A,#48H         ;Load the location where we want to store
+0147 120078     158       lcall ?WriteCommand    ;Send the command
+014A 7400       159       mov   A,#00H         ;Load row 1 data
+014C 120073     160       lcall ?WriteData   ;Send the data
+014F 740F       161       mov   A,#0FH         ;Load row 2 data
+0151 120073     162       lcall ?WriteData   ;Send the data
+0154 7409       163       mov   A,#09H         ;Load row 3 data
+0156 120073     164       lcall ?WriteData   ;Send the data
+0159 7409       165       mov   A,#09H         ;Load row 4 data
+015B 120073     166       lcall ?WriteData   ;Send the data
+015E 741B       167       mov   A,#1BH         ;Load row 5 data
+0160 120073     168       lcall ?WriteData   ;Send the data
+0163 741B       169       mov   A,#1BH         ;Load row 6 data
+0165 120073     170       lcall ?WriteData   ;Send the data
+0168 7400       171       mov   A,#00H         ;Load row 7 data
+016A 1173       172       acall ?WriteData   ;Send the data
+016C 7400       173       mov   A,#00H         ;Load row 8 data
+016E 120073     174       lcall ?WriteData   ;Send the data
+0171 22         175       ret                  ;Return from routine
+0172            176       
+0172            177   eighth:
+0172 7450       178       mov   A,#50H         ;Load the location where we want to store
+0174 120078     179       lcall ?WriteCommand    ;Send the command
+0177 7404       180       mov   A,#04H         ;Load row 1 data
+0179 120073     181       lcall ?WriteData   ;Send the data
+017C 7406       182       mov   A,#06H         ;Load row 2 data
+017E 120073     183       lcall ?WriteData   ;Send the data
+0181 7405       184       mov   A,#05H         ;Load row 3 data
+0183 120073     185       lcall ?WriteData   ;Send the data
+0186 7404       186       mov   A,#04H         ;Load row 4 data
+0188 120073     187       lcall ?WriteData   ;Send the data
+018B 740C       188       mov   A,#0CH         ;Load row 5 data
+018D 120073     189       lcall ?WriteData   ;Send the data
+0190 7414       190       mov   A,#14H         ;Load row 6 data
+0192 120073     191       lcall ?WriteData   ;Send the data
+0195 7408       192       mov   A,#08H         ;Load row 7 data
+0197 1173       193       acall ?WriteData   ;Send the data
+0199 7400       194       mov   A,#00H         ;Load row 8 data
+019B 120073     195       lcall ?WriteData   ;Send the data
+019E 22         196       ret                  ;Return from routine
+019F            197   
+019F            198   heart:
+019F 7458       199       mov   A,#58H         ;Load the location where we want to store
+01A1 120078     200       lcall ?WriteCommand    ;Send the command
+01A4 7400       201       mov   A,#00H         ;Load row 1 data
+01A6 120073     202       lcall ?WriteData   ;Send the data
+01A9 740A       203       mov   A,#0AH         ;Load row 2 data
+01AB 120073     204       lcall ?WriteData   ;Send the data
+01AE 7415       205       mov   A,#15H         ;Load row 3 data
+01B0 120073     206       lcall ?WriteData   ;Send the data
+01B3 7411       207       mov   A,#11H         ;Load row 4 data
+01B5 120073     208       lcall ?WriteData   ;Send the data
+01B8 7411       209       mov   A,#11H         ;Load row 5 data
+01BA 120073     210       lcall ?WriteData   ;Send the data
+01BD 740A       211       mov   A,#0AH         ;Load row 6 data
+01BF 120073     212       lcall ?WriteData   ;Send the data
+01C2 7404       213       mov   A,#04H         ;Load row 7 data
+01C4 1173       214       acall ?WriteData   ;Send the data
+01C6 7400       215       mov   A,#00H         ;Load row 8 data
+01C8 120073     216       lcall ?WriteData   ;Send the data
+01CB 22         217       ret                  ;Return from routine
+01CC            218   bell:
+01CC 7460       219       mov   A,#60H         ;Load the location where we want to store
+01CE 120078     220       lcall ?WriteCommand    ;Send the command
+01D1 7400       221       mov   A,#00H         ;Load row 1 data
+01D3 120073     222       lcall ?WriteData   ;Send the data
+01D6 7404       223       mov   A,#04H          ;Load row 2 data
+01D8 120073     224       lcall ?WriteData   ;Send the data
+01DB 740E       225       mov   A,#0eH          ;Load row 3 data
+01DD 120073     226       lcall ?WriteData   ;Send the data
+01E0 740E       227       mov   A,#0eH         ;Load row 4 data
+01E2 120073     228       lcall ?WriteData   ;Send the data
+01E5 740E       229       mov   A,#0eH         ;Load row 5 data
+01E7 120073     230       lcall ?WriteData   ;Send the data
+01EA 741F       231       mov   A,#1fH         ;Load row 6 data
+01EC 120073     232       lcall ?WriteData   ;Send the data
+01EF 7400       233       mov   A,#00H         ;Load row 7 data
+01F1 1173       234       acall ?WriteData   ;Send the data
+01F3 7404       235       mov   A,#04H         ;Load row 8 data
+01F5 120073     236       lcall ?WriteData   ;Send the data
+01F8 22         237       ret                  ;Return from routine
+01F9            238   
+01F9            239   ;---------------------------------;
+01F9            240   ; Routine to initialize the ISR   ;
+01F9            241   ; for timer 0                     ;
+01F9            242   ;---------------------------------;
+01F9            243   Timer0_Init:
+01F9 438E08     244            orl CKCON, #0b00001000 ; Input for timer 0 is sysclk/1
+01FC E589       245            mov a, TMOD
+01FE 54F0       246            anl a, #0xf0 ; 11110000 Clear the bits for timer 0
+0200 4401       247            orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
+0202 F589       248            mov TMOD, a
+0204 758C7C     249            mov TH0, #high(B3_KEY)
+0207 758ABD     250            mov TL0, #low(B3_KEY)
+020A            251            ; Enable the timer and interrupts
+020A            252       ;setb ET0  ; Enable timer 0 interrupt
+020A D28C       253       setb TR0  ; Start timer 0
+020C 22         254            ret
+020D            255   
+020D            256   ;---------------------------------;
+020D            257   ; ISR for timer 0.  Set to execute;
+020D            258   ; every 1/4096Hz to generate a    ;
+020D            259   ; 2048 Hz wave at pin SOUND_OUT   ;
+020D            260   ;---------------------------------;
+020D            261   Timer0_ISR:
+020D            262            ;clr TF0  ; According to the data sheet this is done for us already.
+020D            263            ; Timer 0 doesn't have 16-bit auto-reload, so
+020D C28C       264            clr TR0
+020F            265            ;mov TH0, #high(TIMER0_RELOAD)
+020F            266            ;mov TL0, #low(TIMER0_RELOAD)
+020F 85338C     267            mov TH0, Melody_Reload+1
+0212 85328A     268            mov TL0, Melody_Reload+0
+0215 D28C       269            setb TR0
+0217 B297       270            cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
+0219 32         271            reti
+021A            272   
+021A            273   Display_special_char1:
+021A 12019F     274            lcall heart
+021D 7481       275            mov a, #0x81
+021F 120078     276            lcall ?WriteCommand
+0222 7403       277            mov a, #3H
+0224 120073     278            lcall ?WriteData
+0227            279   
+0227 120172     280            lcall eighth
+022A 74C4       281            mov a, #0xC4
+022C 120078     282            lcall ?WriteCommand
+022F 7402       283            mov a, #2H
+0231 120073     284            lcall ?WriteData
+0234            285   
+0234 1201CC     286            lcall bell
+0237 7487       287            mov a, #0x87
+0239 120078     288            lcall ?WriteCommand
+023C 7404       289            mov a, #4H
+023E 120073     290            lcall ?WriteData
+0241            291   
+0241 120145     292            lcall double_eighth
+0244 74CA       293            mov a, #0xCA
+0246 120078     294            lcall ?WriteCommand
+0249 7401       295            mov a, #1H
+024B 120073     296            lcall ?WriteData
+024E            297   
+024E 12019F     298            lcall heart
+0251 748D       299            mov a, #0x8D
+0253 120078     300            lcall ?WriteCommand
+0256 7403       301            mov a, #3H
+0258 120073     302            lcall ?WriteData
+025B 32         303            reti
+025C            304            
+025C            305   Display_special_char2:
+025C 12019F     306            lcall heart
+025F 74C0       307            mov a, #0xC0
+0261 120078     308            lcall ?WriteCommand
+0264 7403       309            mov a, #3H
+0266 120073     310            lcall ?WriteData
+0269            311   
+0269 120172     312            lcall eighth
+026C 7483       313            mov a, #0x83
+026E 120078     314            lcall ?WriteCommand
+0271 7402       315            mov a, #2H
+0273 120073     316            lcall ?WriteData
+0276            317   
+0276 1201CC     318            lcall bell
+0279 74C7       319            mov a, #0xC7
+027B 120078     320            lcall ?WriteCommand
+027E 7404       321            mov a, #4H
+0280 120073     322            lcall ?WriteData
+0283            323   
+0283 120145     324            lcall double_eighth
+0286 748B       325            mov a, #0x8B
+0288 120078     326            lcall ?WriteCommand
+028B 7401       327            mov a, #1H
+028D 120073     328            lcall ?WriteData
+0290            329   
+0290 12019F     330            lcall heart
+0293 74CE       331            mov a, #0xCE
+0295 120078     332            lcall ?WriteCommand
+0298 7403       333            mov a, #3H
+029A 120073     334            lcall ?WriteData
+029D 32         335            reti
+029E            336   
+029E            337   clear_screen_func:
+029E            338       
+029E C0E0       339            push acc
+02A0 7401       339            mov a, #1
+02A2 14         339            dec a
+02A3 1200BD     339            lcall ?Set_Cursor_1 ; Select column and row
+02A6 D0E0       339            pop acc
+02A8 C083       340            push dph
+02AA C082       340            push dpl
+02AC C0E0       340            push acc
+02AE 900107     340            mov dptr, #clear_screen
+02B1 1200B0     340            lcall ?Send_Constant_String
+02B4 D0E0       340            pop acc
+02B6 D082       340            pop dpl
+02B8 D083       340            pop dph
+02BA C0E0       341            push acc
+02BC 7401       341            mov a, #1
+02BE 14         341            dec a
+02BF 1200BB     341            lcall ?Set_Cursor_2 ; Select column and row
+02C2 D0E0       341            pop acc
+02C4 C083       342            push dph
+02C6 C082       342            push dpl
+02C8 C0E0       342            push acc
+02CA 900107     342            mov dptr, #clear_screen
+02CD 1200B0     342            lcall ?Send_Constant_String
+02D0 D0E0       342            pop acc
+02D2 D082       342            pop dpl
+02D4 D083       342            pop dph
+02D6 32         343       reti
+02D7            344       
+02D7            345       
+02D7            346   ;---------------------------------;
+02D7            347   ; Main program. Includes hardware ;
+02D7            348   ; initialization and 'forever'    ;
+02D7            349   ; loop.                           ;
+02D7            350   ;---------------------------------;
+02D7            351   main:
+02D7            352            ; Initialization
+02D7 75817F     353       mov SP, #0x7F
+02DA 75B100     354       mov P0M1, #0x00
+02DD 75B200     355       mov P0M2, #0x00
+02E0 75B300     356       mov P1M1, #0x00
+02E3 75B400     357       mov P1M2, #0x00
+02E6 75AD00     358       mov P3M2, #0x00
+02E9 75AD00     359       mov P3M2, #0x00
+02EC 1201F9     360       lcall Timer0_Init
+02EF D2AF       361       setb EA   ; Enable Global interrupts
+02F1 12007D     362       lcall LCD_4BIT
+02F4 C083       363            push dph
+02F6 C082       363            push dpl
+02F8 C0E0       363            push acc
+02FA 9000F6     363            mov dptr, #Initial_Message
+02FD 1200B0     363            lcall ?Send_Constant_String
+0300 D0E0       363            pop acc
+0302 D082       363            pop dpl
+0304 D083       363            pop dph
+0306            364   
+0306            365   Turkish_March:
+0306 D2A9       366            setb ET0
+0308            367   
+0308 12021A     368       lcall Display_special_char1
+030B            369   
+030B 75337C     370            mov Melody_Reload+1, #high(B3_KEY)
+030E 7532BD     371            mov Melody_Reload+0, #low(B3_KEY)
+0311 C002       372            push AR2
+0313 7A78       372            mov R2, #120
+0315 12002E     372            lcall ?Wait_Milli_Seconds
+0318 D002       372            pop AR2
+031A            373   
+031A 75336C     374            mov Melody_Reload+1, #high(A3_KEY)
+031D 7532A1     375            mov Melody_Reload+0, #low(A3_KEY)
+0320 C002       376            push AR2
+0322 7A78       376            mov R2, #120
+0324 12002E     376            lcall ?Wait_Milli_Seconds
+0327 D002       376            pop AR2
+0329            377   
+0329 753363     378            mov Melody_Reload+1, #high(Gs3_KEY)
+032C 7532C0     379            mov Melody_Reload+0, #low(Gs3_KEY)
+032F C002       380            push AR2
+0331 7A78       380            mov R2, #120
+0333 12002E     380            lcall ?Wait_Milli_Seconds
+0336 D002       380            pop AR2
+0338            381            
+0338 75336C     382            mov Melody_Reload+1, #high(A3_KEY)
+033B 7532A1     383            mov Melody_Reload+0, #low(A3_KEY)
+033E C002       384            push AR2
+0340 7A78       384            mov R2, #120
+0342 12002E     384            lcall ?Wait_Milli_Seconds
+0345 D002       384            pop AR2
+0347            385   
+0347 12029E     386            lcall clear_screen_func
+034A            387   ;----------------------------------------
+034A 12025C     388            lcall Display_special_char2
+034D            389   
+034D 753384     390            mov Melody_Reload+1, #high(C4_KEY)
+0350 753205     391            mov Melody_Reload+0, #low(C4_KEY)
+0353 C002       392            push AR2
+0355 7AF0       392            mov R2, #240
+0357 12002E     392            lcall ?Wait_Milli_Seconds
+035A D002       392            pop AR2
+035C C002       393            push AR2
+035E 7AF0       393            mov R2, #240
+0360 12002E     393            lcall ?Wait_Milli_Seconds
+0363 D002       393            pop AR2
+0365            394            
+0365 12029E     395       lcall clear_screen_func
+0368 12021A     396       lcall Display_special_char1
+036B            397       
+036B 753384     398            mov Melody_Reload+1, #high(D4_KEY)
+036E 753205     399            mov Melody_Reload+0, #low(D4_KEY)
+0371 C002       400            push AR2
+0373 7A78       400            mov R2, #120
+0375 12002E     400            lcall ?Wait_Milli_Seconds
+0378 D002       400            pop AR2
+037A            401   
+037A 753384     402            mov Melody_Reload+1, #high(C4_KEY)
+037D 753205     403            mov Melody_Reload+0, #low(C4_KEY)
+0380 C002       404            push AR2
+0382 7A78       404            mov R2, #120
+0384 12002E     404            lcall ?Wait_Milli_Seconds
+0387 D002       404            pop AR2
+0389            405   
+0389 7533BE     406            mov Melody_Reload+1, #high(B4_KEY)
+038C 75325F     407            mov Melody_Reload+0, #low(B4_KEY)
+038F C002       408            push AR2
+0391 7A78       408            mov R2, #120
+0393 12002E     408            lcall ?Wait_Milli_Seconds
+0396 D002       408            pop AR2
+0398            409   
+0398 7533C2     410            mov Melody_Reload+1, #high(C5_KEY)
+039B 753212     411            mov Melody_Reload+0, #low(C5_KEY)
+039E C002       412            push AR2
+03A0 7A78       412            mov R2, #120
+03A2 12002E     412            lcall ?Wait_Milli_Seconds
+03A5 D002       412            pop AR2
+03A7            413   
+03A7 12029E     414            lcall clear_screen_func
+03AA 12025C     415       lcall Display_special_char2
+03AD            416            
+03AD 7533CE     417            mov Melody_Reload+1, #high(E5_KEY)
+03B0 7532D7     418            mov Melody_Reload+0, #low(E5_KEY)
+03B3 C002       419            push AR2
+03B5 7AF0       419            mov R2, #240
+03B7 12002E     419            lcall ?Wait_Milli_Seconds
+03BA D002       419            pop AR2
+03BC C002       420            push AR2
+03BE 7AF0       420            mov R2, #240
+03C0 12002E     420            lcall ?Wait_Milli_Seconds
+03C3 D002       420            pop AR2
+03C5            421   
+03C5 12029E     422            lcall clear_screen_func
+03C8 12021A     423       lcall Display_special_char1
+03CB            424   ;-----------------------------------------
+03CB 7533D1     425            mov Melody_Reload+1, #high(F5_KEY)
+03CE 753296     426            mov Melody_Reload+0, #low(F5_KEY)
+03D1 C002       427            push AR2
+03D3 7A78       427            mov R2, #120
+03D5 12002E     427            lcall ?Wait_Milli_Seconds
+03D8 D002       427            pop AR2
+03DA            428   
+03DA 7533CE     429            mov Melody_Reload+1, #high(E5_KEY)
+03DD 7532D7     430            mov Melody_Reload+0, #low(E5_KEY)
+03E0 C002       431            push AR2
+03E2 7A78       431            mov R2, #120
+03E4 12002E     431            lcall ?Wait_Milli_Seconds
+03E7 D002       431            pop AR2
+03E9            432   
+03E9 7533CB     433            mov Melody_Reload+1, #high(Ds5_KEY)
+03EC 7532EB     434            mov Melody_Reload+0, #low(Ds5_KEY)
+03EF C002       435            push AR2
+03F1 7A78       435            mov R2, #120
+03F3 12002E     435            lcall ?Wait_Milli_Seconds
+03F6 D002       435            pop AR2
+03F8            436   
+03F8 7533CE     437            mov Melody_Reload+1, #high(E5_KEY)
+03FB 7532D7     438            mov Melody_Reload+0, #low(E5_KEY)
+03FE C002       439            push AR2
+0400 7A78       439            mov R2, #120
+0402 12002E     439            lcall ?Wait_Milli_Seconds
+0405 D002       439            pop AR2
+0407            440   
+0407 12029E     441            lcall clear_screen_func
+040A 12025C     442       lcall Display_special_char2
+040D            443   ;-----------------------------------------
+040D 7533DF     444            mov Melody_Reload+1, #high(B5_KEY)
+0410 753230     445            mov Melody_Reload+0, #low(B5_KEY)
+0413 C002       446            push AR2
+0415 7A78       446            mov R2, #120
+0417 12002E     446            lcall ?Wait_Milli_Seconds
+041A D002       446            pop AR2
+041C            447   
+041C 7533DB     448            mov Melody_Reload+1, #high(A5_KEY)
+041F 753229     449            mov Melody_Reload+0, #low(A5_KEY)
+0422 C002       450            push AR2
+0424 7A78       450            mov R2, #120
+0426 12002E     450            lcall ?Wait_Milli_Seconds
+0429 D002       450            pop AR2
+042B            451   
+042B 7533D8     452            mov Melody_Reload+1, #high(Gs5_KEY)
+042E 7532F7     453            mov Melody_Reload+0, #low(Gs5_KEY)
+0431 C002       454            push AR2
+0433 7A78       454            mov R2, #120
+0435 12002E     454            lcall ?Wait_Milli_Seconds
+0438 D002       454            pop AR2
+043A            455   
+043A 7533DB     456            mov Melody_Reload+1, #high(A5_KEY)
+043D 753229     457            mov Melody_Reload+0, #low(A5_KEY)
+0440 C002       458            push AR2
+0442 7A78       458            mov R2, #120
+0444 12002E     458            lcall ?Wait_Milli_Seconds
+0447 D002       458            pop AR2
+0449            459   
+0449 12029E     460            lcall clear_screen_func
+044C 12021A     461       lcall Display_special_char1
+044F            462   ;--------------------------------------
+044F 7533DF     463            mov Melody_Reload+1, #high(B5_KEY)
+0452 753230     464            mov Melody_Reload+0, #low(B5_KEY)
+0455 C002       465            push AR2
+0457 7A78       465            mov R2, #120
+0459 12002E     465            lcall ?Wait_Milli_Seconds
+045C D002       465            pop AR2
+045E            466   
+045E 7533DB     467            mov Melody_Reload+1, #high(A5_KEY)
+0461 753229     468            mov Melody_Reload+0, #low(A5_KEY)
+0464 C002       469            push AR2
+0466 7A78       469            mov R2, #120
+0468 12002E     469            lcall ?Wait_Milli_Seconds
+046B D002       469            pop AR2
+046D            470   
+046D 7533D8     471            mov Melody_Reload+1, #high(Gs5_KEY)
+0470 7532F7     472            mov Melody_Reload+0, #low(Gs5_KEY)
+0473 C002       473            push AR2
+0475 7A78       473            mov R2, #120
+0477 12002E     473            lcall ?Wait_Milli_Seconds
+047A D002       473            pop AR2
+047C            474   
+047C 7533DB     475            mov Melody_Reload+1, #high(A5_KEY)
+047F 753229     476            mov Melody_Reload+0, #low(A5_KEY)
+0482 C002       477            push AR2
+0484 7A78       477            mov R2, #120
+0486 12002E     477            lcall ?Wait_Milli_Seconds
+0489 D002       477            pop AR2
+048B            478   
+048B 12029E     479            lcall clear_screen_func
+048E 12025C     480       lcall Display_special_char2
+0491            481   
+0491 7533E1     482            mov Melody_Reload+1, #high(C6_KEY)
+0494 753205     483            mov Melody_Reload+0, #low(C6_KEY)
+0497 C002       484            push AR2
+0499 7AF0       484            mov R2, #240
+049B 12002E     484            lcall ?Wait_Milli_Seconds
+049E D002       484            pop AR2
+04A0 C002       485            push AR2
+04A2 7AF0       485            mov R2, #240
+04A4 12002E     485            lcall ?Wait_Milli_Seconds
+04A7 D002       485            pop AR2
+04A9            486            
+04A9 12029E     487            lcall clear_screen_func
+04AC 12021A     488       lcall Display_special_char1
+04AF            489   ;----------------------------------------
+04AF 7533DB     490            mov Melody_Reload+1, #high(A5_KEY)
+04B2 753229     491            mov Melody_Reload+0, #low(A5_KEY)
+04B5 C002       492            push AR2
+04B7 7AF0       492            mov R2, #240
+04B9 12002E     492            lcall ?Wait_Milli_Seconds
+04BC D002       492            pop AR2
+04BE            493   
+04BE 7533E1     494            mov Melody_Reload+1, #high(C6_KEY)
+04C1 753205     495            mov Melody_Reload+0, #low(C6_KEY)
+04C4 C002       496            push AR2
+04C6 7AF0       496            mov R2, #240
+04C8 12002E     496            lcall ?Wait_Milli_Seconds
+04CB D002       496            pop AR2
+04CD            497   
+04CD 12029E     498            lcall clear_screen_func
+04D0 12025C     499       lcall Display_special_char2
+04D3            500   ;-----------------------------------------
+04D3 7533DF     501            mov Melody_Reload+1, #high(B5_KEY)
+04D6 753230     502            mov Melody_Reload+0, #low(B5_KEY)
+04D9 C002       503            push AR2
+04DB 7AF0       503            mov R2, #240
+04DD 12002E     503            lcall ?Wait_Milli_Seconds
+04E0 D002       503            pop AR2
+04E2            504   
+04E2 7533DB     505            mov Melody_Reload+1, #high(A5_KEY)
+04E5 753229     506            mov Melody_Reload+0, #low(A5_KEY)
+04E8 C002       507            push AR2
+04EA 7AF0       507            mov R2, #240
+04EC 12002E     507            lcall ?Wait_Milli_Seconds
+04EF D002       507            pop AR2
+04F1            508   
+04F1 12029E     509            lcall clear_screen_func
+04F4 12021A     510       lcall Display_special_char1
+04F7            511   
+04F7 7533D6     512            mov Melody_Reload+1, #high(G5_KEY)
+04FA 753229     513            mov Melody_Reload+0, #low(A5_KEY)
+04FD C002       514            push AR2
+04FF 7AF0       514            mov R2, #240
+0501 12002E     514            lcall ?Wait_Milli_Seconds
+0504 D002       514            pop AR2
+0506            515   
+0506 7533DB     516            mov Melody_Reload+1, #high(A5_KEY)
+0509 753229     517            mov Melody_Reload+0, #low(A5_KEY)
+050C C002       518            push AR2
+050E 7AF0       518            mov R2, #240
+0510 12002E     518            lcall ?Wait_Milli_Seconds
+0513 D002       518            pop AR2
+0515            519   
+0515 12029E     520            lcall clear_screen_func
+0518 12025C     521       lcall Display_special_char2
+051B            522   ;-----------------------------------------
+051B 7533DF     523            mov Melody_Reload+1, #high(B5_KEY)
+051E 753230     524            mov Melody_Reload+0, #low(B5_KEY)
+0521 C002       525            push AR2
+0523 7AF0       525            mov R2, #240
+0525 12002E     525            lcall ?Wait_Milli_Seconds
+0528 D002       525            pop AR2
+052A            526   
+052A 7533DB     527            mov Melody_Reload+1, #high(A5_KEY)
+052D 753229     528            mov Melody_Reload+0, #low(A5_KEY)
+0530 C002       529            push AR2
+0532 7AF0       529            mov R2, #240
+0534 12002E     529            lcall ?Wait_Milli_Seconds
+0537 D002       529            pop AR2
+0539            530   
+0539 12029E     531            lcall clear_screen_func
+053C 12021A     532       lcall Display_special_char1
+053F            533   
+053F 7533D6     534            mov Melody_Reload+1, #high(G5_KEY)
+0542 753229     535            mov Melody_Reload+0, #low(A5_KEY)
+0545 C002       536            push AR2
+0547 7AF0       536            mov R2, #240
+0549 12002E     536            lcall ?Wait_Milli_Seconds
+054C D002       536            pop AR2
+054E            537   
+054E 7533DB     538            mov Melody_Reload+1, #high(A5_KEY)
+0551 753229     539            mov Melody_Reload+0, #low(A5_KEY)
+0554 C002       540            push AR2
+0556 7AF0       540            mov R2, #240
+0558 12002E     540            lcall ?Wait_Milli_Seconds
+055B D002       540            pop AR2
+055D            541   
+055D 12029E     542            lcall clear_screen_func
+0560 12025C     543       lcall Display_special_char2
+0563            544   ;-----------------------------------------
+0563 7533DF     545            mov Melody_Reload+1, #high(B5_KEY)
+0566 753230     546            mov Melody_Reload+0, #low(B5_KEY)
+0569 C002       547            push AR2
+056B 7AF0       547            mov R2, #240
+056D 12002E     547            lcall ?Wait_Milli_Seconds
+0570 D002       547            pop AR2
+0572            548   
+0572 7533DB     549            mov Melody_Reload+1, #high(A5_KEY)
+0575 753229     550            mov Melody_Reload+0, #low(A5_KEY)
+0578 C002       551            push AR2
+057A 7AF0       551            mov R2, #240
+057C 12002E     551            lcall ?Wait_Milli_Seconds
+057F D002       551            pop AR2
+0581            552   
+0581 12029E     553            lcall clear_screen_func
+0584 12021A     554       lcall Display_special_char1
+0587            555   
+0587 7533D6     556            mov Melody_Reload+1, #high(G5_KEY)
+058A 753229     557            mov Melody_Reload+0, #low(A5_KEY)
+058D C002       558            push AR2
+058F 7AF0       558            mov R2, #240
+0591 12002E     558            lcall ?Wait_Milli_Seconds
+0594 D002       558            pop AR2
+0596            559            
+0596 7533D4     560            mov Melody_Reload+1, #high(Fs5_KEY)
+0599 753230     561            mov Melody_Reload+0, #low(Fs5_KEY)
+059C C002       562            push AR2
+059E 7AF0       562            mov R2, #240
+05A0 12002E     562            lcall ?Wait_Milli_Seconds
+05A3 D002       562            pop AR2
+05A5            563   
+05A5 12029E     564            lcall clear_screen_func
+05A8 12025C     565       lcall Display_special_char2
+05AB            566   
+05AB 7533CE     567            mov Melody_Reload+1, #high(E5_KEY)
+05AE 7532D7     568            mov Melody_Reload+0, #low(E5_KEY)
+05B1 C002       569            push AR2
+05B3 7AF0       569            mov R2, #240
+05B5 12002E     569            lcall ?Wait_Milli_Seconds
+05B8 D002       569            pop AR2
+05BA C002       570            push AR2
+05BC 7AF0       570            mov R2, #240
+05BE 12002E     570            lcall ?Wait_Milli_Seconds
+05C1 D002       570            pop AR2
+05C3            571   
+05C3 12029E     572            lcall clear_screen_func
+05C6 12021A     573       lcall Display_special_char1
+05C9            574   
+05C9            575   forever:
+05C9 C28C       576            clr TR0
+05CB 80FC       577            sjmp forever
+05CD            578   END

@@ -77,7 +77,7 @@
 0000             79   
 0000             80   ; Reset vector
 0000             81   org 0x0000
-0000 020122      82       ljmp main
+0000 020128      82       ljmp main
 0003             83   
 0003             84   ; External interrupt 0 vector (not used in this code)
 0003             85   org 0x0003
@@ -85,7 +85,7 @@
 0004             87   
 0004             88   ; Timer/Counter 0 overflow interrupt vector
 000B             89   org 0x000B
-000B 020115      90            ljmp Timer0_ISR
+000B 02011B      90            ljmp Timer0_ISR
 000E             91   
 000E             92   ; External interrupt 1 vector (not used in this code)
 0013             93   org 0x0013
@@ -138,343 +138,343 @@
 010C 54F0       138            anl a, #0xf0 ; 11110000 Clear the bits for timer 0
 010E 4401       139            orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
 0110 F589       140            mov TMOD, a
-0112            141            ;mov TH0, #high(B3_KEY)
-0112            142            ;mov TL0, #low(B3_KEY)
-0112            143            ; Enable the timer and interrupts
-0112            144       ;setb ET0  ; Enable timer 0 interrupt
-0112 D28C       145       setb TR0  ; Start timer 0
-0114 22         146            ret
-0115            147   
-0115            148   ;---------------------------------;
-0115            149   ; ISR for timer 0.  Set to execute;
-0115            150   ; every 1/4096Hz to generate a    ;
-0115            151   ; 2048 Hz wave at pin SOUND_OUT   ;
-0115            152   ;---------------------------------;
-0115            153   Timer0_ISR:
-0115            154            ;clr TF0  ; According to the data sheet this is done for us already.
-0115            155            ; Timer 0 doesn't have 16-bit auto-reload, so
-0115 C28C       156            clr TR0
-0117            157            ;mov TH0, #high(TIMER0_RELOAD)
-0117            158            ;mov TL0, #low(TIMER0_RELOAD)
-0117 85338C     159            mov TH0, Melody_Reload+1
-011A 85328A     160            mov TL0, Melody_Reload+0
-011D D28C       161            setb TR0
-011F B297       162            cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
-0121 32         163            reti
-0122            164            
-0122            165   ;---------------------------------;
-0122            166   ; Main program. Includes hardware ;
-0122            167   ; initialization and 'forever'    ;
-0122            168   ; loop.                           ;
-0122            169   ;---------------------------------;
-0122            170   main:
-0122            171            ; Initialization
-0122 75817F     172       mov SP, #0x7F
-0125 75B100     173       mov P0M1, #0x00
-0128 75B200     174       mov P0M2, #0x00
-012B 75B300     175       mov P1M1, #0x00
-012E 75B400     176       mov P1M2, #0x00
-0131 75AD00     177       mov P3M2, #0x00
-0134 75AD00     178       mov P3M2, #0x00
-0137            179       
-0137 D2AF       180       setb EA   ; Enable Global interrupts
-0139 12007D     181       lcall LCD_4BIT
-013C C083       182            push dph
-013E C082       182            push dpl
-0140 C0E0       182            push acc
-0142 9000F6     182            mov dptr, #Initial_Message
-0145 1200B0     182            lcall ?Send_Constant_String
-0148 D0E0       182            pop acc
-014A D082       182            pop dpl
-014C D083       182            pop dph
-014E            183   
-014E            184   Turkish_March:
-014E 120107     185            lcall Timer0_Init
-0151            186            ;setb ET0
-0151 75337C     187       mov Melody_Reload+1, #high(B3_KEY)
-0154 7532BD     188            mov Melody_Reload+0, #low(B3_KEY)
-0157 C002       189            push AR2
-0159 7A78       189            mov R2, #120
-015B 12002E     189            lcall ?Wait_Milli_Seconds
-015E D002       189            pop AR2
-0160            190   
-0160 75336C     191            mov Melody_Reload+1, #high(A3_KEY)
-0163 7532A1     192            mov Melody_Reload+0, #low(A3_KEY)
-0166 C002       193            push AR2
-0168 7A78       193            mov R2, #120
-016A 12002E     193            lcall ?Wait_Milli_Seconds
-016D D002       193            pop AR2
-016F            194   
-016F 753363     195            mov Melody_Reload+1, #high(Gs3_KEY)
-0172 7532C0     196            mov Melody_Reload+0, #low(Gs3_KEY)
-0175 C002       197            push AR2
-0177 7A78       197            mov R2, #120
-0179 12002E     197            lcall ?Wait_Milli_Seconds
-017C D002       197            pop AR2
-017E            198            
-017E 75336C     199            mov Melody_Reload+1, #high(A3_KEY)
-0181 7532A1     200            mov Melody_Reload+0, #low(A3_KEY)
-0184 C002       201            push AR2
-0186 7A78       201            mov R2, #120
-0188 12002E     201            lcall ?Wait_Milli_Seconds
-018B D002       201            pop AR2
-018D            202   ;----------------------------------------
-018D 753384     203            mov Melody_Reload+1, #high(C4_KEY)
-0190 753205     204            mov Melody_Reload+0, #low(C4_KEY)
-0193 C002       205            push AR2
-0195 7AF0       205            mov R2, #240
-0197 12002E     205            lcall ?Wait_Milli_Seconds
-019A D002       205            pop AR2
-019C C002       206            push AR2
-019E 7AF0       206            mov R2, #240
-01A0 12002E     206            lcall ?Wait_Milli_Seconds
-01A3 D002       206            pop AR2
-01A5 D2A9       207            setb ET0
-01A7 753384     208            mov Melody_Reload+1, #high(D4_KEY)
-01AA 753205     209            mov Melody_Reload+0, #low(D4_KEY)
-01AD C002       210            push AR2
-01AF 7A78       210            mov R2, #120
-01B1 12002E     210            lcall ?Wait_Milli_Seconds
-01B4 D002       210            pop AR2
-01B6            211   
-01B6 753384     212            mov Melody_Reload+1, #high(C4_KEY)
-01B9 753205     213            mov Melody_Reload+0, #low(C4_KEY)
-01BC C002       214            push AR2
-01BE 7A78       214            mov R2, #120
-01C0 12002E     214            lcall ?Wait_Milli_Seconds
-01C3 D002       214            pop AR2
-01C5            215   
-01C5 7533BE     216            mov Melody_Reload+1, #high(B4_KEY)
-01C8 75325F     217            mov Melody_Reload+0, #low(B4_KEY)
-01CB C002       218            push AR2
-01CD 7A78       218            mov R2, #120
-01CF 12002E     218            lcall ?Wait_Milli_Seconds
-01D2 D002       218            pop AR2
-01D4            219   
-01D4 7533C2     220            mov Melody_Reload+1, #high(C5_KEY)
-01D7 753212     221            mov Melody_Reload+0, #low(C5_KEY)
-01DA C002       222            push AR2
-01DC 7A78       222            mov R2, #120
-01DE 12002E     222            lcall ?Wait_Milli_Seconds
-01E1 D002       222            pop AR2
-01E3            223   
-01E3 7533CE     224            mov Melody_Reload+1, #high(E5_KEY)
-01E6 7532D7     225            mov Melody_Reload+0, #low(E5_KEY)
-01E9 C002       226            push AR2
-01EB 7AF0       226            mov R2, #240
-01ED 12002E     226            lcall ?Wait_Milli_Seconds
-01F0 D002       226            pop AR2
-01F2 C002       227            push AR2
-01F4 7AF0       227            mov R2, #240
-01F6 12002E     227            lcall ?Wait_Milli_Seconds
-01F9 D002       227            pop AR2
-01FB            228   ;-----------------------------------------
-01FB 7533D1     229            mov Melody_Reload+1, #high(F5_KEY)
-01FE 753296     230            mov Melody_Reload+0, #low(F5_KEY)
-0201 C002       231            push AR2
-0203 7A78       231            mov R2, #120
-0205 12002E     231            lcall ?Wait_Milli_Seconds
-0208 D002       231            pop AR2
-020A            232   
-020A 7533CE     233            mov Melody_Reload+1, #high(E5_KEY)
-020D 7532D7     234            mov Melody_Reload+0, #low(E5_KEY)
-0210 C002       235            push AR2
-0212 7A78       235            mov R2, #120
-0214 12002E     235            lcall ?Wait_Milli_Seconds
-0217 D002       235            pop AR2
-0219            236   
-0219 7533CB     237            mov Melody_Reload+1, #high(Ds5_KEY)
-021C 7532EB     238            mov Melody_Reload+0, #low(Ds5_KEY)
-021F C002       239            push AR2
-0221 7A78       239            mov R2, #120
-0223 12002E     239            lcall ?Wait_Milli_Seconds
-0226 D002       239            pop AR2
-0228            240   
-0228 7533CE     241            mov Melody_Reload+1, #high(E5_KEY)
-022B 7532D7     242            mov Melody_Reload+0, #low(E5_KEY)
-022E C002       243            push AR2
-0230 7A78       243            mov R2, #120
-0232 12002E     243            lcall ?Wait_Milli_Seconds
-0235 D002       243            pop AR2
-0237            244   ;-----------------------------------------
-0237 7533DF     245            mov Melody_Reload+1, #high(B5_KEY)
-023A 753230     246            mov Melody_Reload+0, #low(B5_KEY)
-023D C002       247            push AR2
-023F 7A78       247            mov R2, #120
-0241 12002E     247            lcall ?Wait_Milli_Seconds
-0244 D002       247            pop AR2
-0246            248   
-0246 7533DB     249            mov Melody_Reload+1, #high(A5_KEY)
-0249 753229     250            mov Melody_Reload+0, #low(A5_KEY)
-024C C002       251            push AR2
-024E 7A78       251            mov R2, #120
-0250 12002E     251            lcall ?Wait_Milli_Seconds
-0253 D002       251            pop AR2
-0255            252   
-0255 7533D8     253            mov Melody_Reload+1, #high(Gs5_KEY)
-0258 7532F7     254            mov Melody_Reload+0, #low(Gs5_KEY)
-025B C002       255            push AR2
-025D 7A78       255            mov R2, #120
-025F 12002E     255            lcall ?Wait_Milli_Seconds
-0262 D002       255            pop AR2
-0264            256   
-0264 7533DB     257            mov Melody_Reload+1, #high(A5_KEY)
-0267 753229     258            mov Melody_Reload+0, #low(A5_KEY)
-026A C002       259            push AR2
-026C 7A78       259            mov R2, #120
-026E 12002E     259            lcall ?Wait_Milli_Seconds
-0271 D002       259            pop AR2
-0273            260   ;--------------------------------------
-0273 7533DF     261            mov Melody_Reload+1, #high(B5_KEY)
-0276 753230     262            mov Melody_Reload+0, #low(B5_KEY)
-0279 C002       263            push AR2
-027B 7A78       263            mov R2, #120
-027D 12002E     263            lcall ?Wait_Milli_Seconds
-0280 D002       263            pop AR2
-0282            264   
-0282 7533DB     265            mov Melody_Reload+1, #high(A5_KEY)
-0285 753229     266            mov Melody_Reload+0, #low(A5_KEY)
-0288 C002       267            push AR2
-028A 7A78       267            mov R2, #120
-028C 12002E     267            lcall ?Wait_Milli_Seconds
-028F D002       267            pop AR2
-0291            268   
-0291 7533D8     269            mov Melody_Reload+1, #high(Gs5_KEY)
-0294 7532F7     270            mov Melody_Reload+0, #low(Gs5_KEY)
-0297 C002       271            push AR2
-0299 7A78       271            mov R2, #120
-029B 12002E     271            lcall ?Wait_Milli_Seconds
-029E D002       271            pop AR2
-02A0            272   
-02A0 7533DB     273            mov Melody_Reload+1, #high(A5_KEY)
-02A3 753229     274            mov Melody_Reload+0, #low(A5_KEY)
-02A6 C002       275            push AR2
-02A8 7A78       275            mov R2, #120
-02AA 12002E     275            lcall ?Wait_Milli_Seconds
-02AD D002       275            pop AR2
-02AF            276   
-02AF 7533E1     277            mov Melody_Reload+1, #high(C6_KEY)
-02B2 753205     278            mov Melody_Reload+0, #low(C6_KEY)
-02B5 C002       279            push AR2
-02B7 7AF0       279            mov R2, #240
-02B9 12002E     279            lcall ?Wait_Milli_Seconds
-02BC D002       279            pop AR2
-02BE C002       280            push AR2
-02C0 7AF0       280            mov R2, #240
-02C2 12002E     280            lcall ?Wait_Milli_Seconds
-02C5 D002       280            pop AR2
-02C7            281            
-02C7            282   ;----------------------------------------
-02C7 7533DB     283            mov Melody_Reload+1, #high(A5_KEY)
-02CA 753229     284            mov Melody_Reload+0, #low(A5_KEY)
-02CD C002       285            push AR2
-02CF 7AF0       285            mov R2, #240
-02D1 12002E     285            lcall ?Wait_Milli_Seconds
-02D4 D002       285            pop AR2
-02D6            286   
-02D6 7533E1     287            mov Melody_Reload+1, #high(C6_KEY)
-02D9 753205     288            mov Melody_Reload+0, #low(C6_KEY)
-02DC C002       289            push AR2
-02DE 7AF0       289            mov R2, #240
-02E0 12002E     289            lcall ?Wait_Milli_Seconds
-02E3 D002       289            pop AR2
-02E5            290   ;-----------------------------------------
-02E5 7533DF     291            mov Melody_Reload+1, #high(B5_KEY)
-02E8 753230     292            mov Melody_Reload+0, #low(B5_KEY)
-02EB C002       293            push AR2
-02ED 7AF0       293            mov R2, #240
-02EF 12002E     293            lcall ?Wait_Milli_Seconds
-02F2 D002       293            pop AR2
-02F4            294   
-02F4 7533DB     295            mov Melody_Reload+1, #high(A5_KEY)
-02F7 753229     296            mov Melody_Reload+0, #low(A5_KEY)
-02FA C002       297            push AR2
-02FC 7AF0       297            mov R2, #240
-02FE 12002E     297            lcall ?Wait_Milli_Seconds
-0301 D002       297            pop AR2
-0303            298   
-0303 7533D6     299            mov Melody_Reload+1, #high(G5_KEY)
-0306 753229     300            mov Melody_Reload+0, #low(A5_KEY)
-0309 C002       301            push AR2
-030B 7AF0       301            mov R2, #240
-030D 12002E     301            lcall ?Wait_Milli_Seconds
-0310 D002       301            pop AR2
-0312            302   
-0312 7533DB     303            mov Melody_Reload+1, #high(A5_KEY)
-0315 753229     304            mov Melody_Reload+0, #low(A5_KEY)
-0318 C002       305            push AR2
-031A 7AF0       305            mov R2, #240
-031C 12002E     305            lcall ?Wait_Milli_Seconds
-031F D002       305            pop AR2
-0321            306   ;-----------------------------------------
-0321 7533DF     307            mov Melody_Reload+1, #high(B5_KEY)
-0324 753230     308            mov Melody_Reload+0, #low(B5_KEY)
-0327 C002       309            push AR2
-0329 7AF0       309            mov R2, #240
-032B 12002E     309            lcall ?Wait_Milli_Seconds
-032E D002       309            pop AR2
-0330            310   
-0330 7533DB     311            mov Melody_Reload+1, #high(A5_KEY)
-0333 753229     312            mov Melody_Reload+0, #low(A5_KEY)
-0336 C002       313            push AR2
-0338 7AF0       313            mov R2, #240
-033A 12002E     313            lcall ?Wait_Milli_Seconds
-033D D002       313            pop AR2
-033F            314   
-033F 7533D6     315            mov Melody_Reload+1, #high(G5_KEY)
-0342 753229     316            mov Melody_Reload+0, #low(A5_KEY)
-0345 C002       317            push AR2
-0347 7AF0       317            mov R2, #240
-0349 12002E     317            lcall ?Wait_Milli_Seconds
-034C D002       317            pop AR2
-034E            318   
-034E 7533DB     319            mov Melody_Reload+1, #high(A5_KEY)
-0351 753229     320            mov Melody_Reload+0, #low(A5_KEY)
-0354 C002       321            push AR2
-0356 7AF0       321            mov R2, #240
-0358 12002E     321            lcall ?Wait_Milli_Seconds
-035B D002       321            pop AR2
-035D            322   ;-----------------------------------------
-035D 7533DF     323            mov Melody_Reload+1, #high(B5_KEY)
-0360 753230     324            mov Melody_Reload+0, #low(B5_KEY)
-0363 C002       325            push AR2
-0365 7AF0       325            mov R2, #240
-0367 12002E     325            lcall ?Wait_Milli_Seconds
-036A D002       325            pop AR2
-036C            326   
-036C 7533DB     327            mov Melody_Reload+1, #high(A5_KEY)
-036F 753229     328            mov Melody_Reload+0, #low(A5_KEY)
-0372 C002       329            push AR2
-0374 7AF0       329            mov R2, #240
-0376 12002E     329            lcall ?Wait_Milli_Seconds
-0379 D002       329            pop AR2
-037B            330   
-037B 7533D6     331            mov Melody_Reload+1, #high(G5_KEY)
-037E 753229     332            mov Melody_Reload+0, #low(A5_KEY)
-0381 C002       333            push AR2
-0383 7AF0       333            mov R2, #240
-0385 12002E     333            lcall ?Wait_Milli_Seconds
-0388 D002       333            pop AR2
-038A            334            
-038A 7533D4     335            mov Melody_Reload+1, #high(Fs5_KEY)
-038D 753230     336            mov Melody_Reload+0, #low(Fs5_KEY)
-0390 C002       337            push AR2
-0392 7AF0       337            mov R2, #240
-0394 12002E     337            lcall ?Wait_Milli_Seconds
-0397 D002       337            pop AR2
-0399            338   
-0399 7533CE     339            mov Melody_Reload+1, #high(E5_KEY)
-039C 7532D7     340            mov Melody_Reload+0, #low(E5_KEY)
-039F C002       341            push AR2
-03A1 7AF0       341            mov R2, #240
-03A3 12002E     341            lcall ?Wait_Milli_Seconds
-03A6 D002       341            pop AR2
-03A8 C002       342            push AR2
-03AA 7AF0       342            mov R2, #240
-03AC 12002E     342            lcall ?Wait_Milli_Seconds
-03AF D002       342            pop AR2
-03B1            343   
-03B1            344   forever:
-03B1 C28C       345            clr TR0
-03B3 80FC       346            sjmp forever
-03B5            347   END
+0112 85338C     141            mov TH0, Melody_Reload+1
+0115 85328A     142            mov TL0, Melody_Reload+0
+0118            143            ; Enable the timer and interrupts
+0118            144       ;setb ET0  ; Enable timer 0 interrupt
+0118 D28C       145       setb TR0  ; Start timer 0
+011A 22         146            ret
+011B            147   
+011B            148   ;---------------------------------;
+011B            149   ; ISR for timer 0.  Set to execute;
+011B            150   ; every 1/4096Hz to generate a    ;
+011B            151   ; 2048 Hz wave at pin SOUND_OUT   ;
+011B            152   ;---------------------------------;
+011B            153   Timer0_ISR:
+011B            154            ;clr TF0  ; According to the data sheet this is done for us already.
+011B            155            ; Timer 0 doesn't have 16-bit auto-reload, so
+011B C28C       156            clr TR0
+011D            157            ;mov TH0, #high(TIMER0_RELOAD)
+011D            158            ;mov TL0, #low(TIMER0_RELOAD)
+011D 85338C     159            mov TH0, Melody_Reload+1
+0120 85328A     160            mov TL0, Melody_Reload+0
+0123 D28C       161            setb TR0
+0125 B297       162            cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
+0127 32         163            reti
+0128            164            
+0128            165   ;---------------------------------;
+0128            166   ; Main program. Includes hardware ;
+0128            167   ; initialization and 'forever'    ;
+0128            168   ; loop.                           ;
+0128            169   ;---------------------------------;
+0128            170   main:
+0128            171            ; Initialization
+0128 75817F     172       mov SP, #0x7F
+012B 75B100     173       mov P0M1, #0x00
+012E 75B200     174       mov P0M2, #0x00
+0131 75B300     175       mov P1M1, #0x00
+0134 75B400     176       mov P1M2, #0x00
+0137 75AD00     177       mov P3M2, #0x00
+013A 75AD00     178       mov P3M2, #0x00
+013D            179       
+013D D2AF       180       setb EA   ; Enable Global interrupts
+013F 12007D     181       lcall LCD_4BIT
+0142 C083       182            push dph
+0144 C082       182            push dpl
+0146 C0E0       182            push acc
+0148 9000F6     182            mov dptr, #Initial_Message
+014B 1200B0     182            lcall ?Send_Constant_String
+014E D0E0       182            pop acc
+0150 D082       182            pop dpl
+0152 D083       182            pop dph
+0154            183   
+0154            184   Turkish_March:
+0154 120107     185            lcall Timer0_Init
+0157 D2A9       186            setb ET0
+0159 75337C     187       mov Melody_Reload+1, #high(B3_KEY)
+015C 7532BD     188            mov Melody_Reload+0, #low(B3_KEY)
+015F C002       189            push AR2
+0161 7A78       189            mov R2, #120
+0163 12002E     189            lcall ?Wait_Milli_Seconds
+0166 D002       189            pop AR2
+0168            190   
+0168 75336C     191            mov Melody_Reload+1, #high(A3_KEY)
+016B 7532A1     192            mov Melody_Reload+0, #low(A3_KEY)
+016E C002       193            push AR2
+0170 7A78       193            mov R2, #120
+0172 12002E     193            lcall ?Wait_Milli_Seconds
+0175 D002       193            pop AR2
+0177            194   
+0177 753363     195            mov Melody_Reload+1, #high(Gs3_KEY)
+017A 7532C0     196            mov Melody_Reload+0, #low(Gs3_KEY)
+017D C002       197            push AR2
+017F 7A78       197            mov R2, #120
+0181 12002E     197            lcall ?Wait_Milli_Seconds
+0184 D002       197            pop AR2
+0186            198            
+0186 75336C     199            mov Melody_Reload+1, #high(A3_KEY)
+0189 7532A1     200            mov Melody_Reload+0, #low(A3_KEY)
+018C C002       201            push AR2
+018E 7A78       201            mov R2, #120
+0190 12002E     201            lcall ?Wait_Milli_Seconds
+0193 D002       201            pop AR2
+0195            202   ;----------------------------------------
+0195 753384     203            mov Melody_Reload+1, #high(C4_KEY)
+0198 753205     204            mov Melody_Reload+0, #low(C4_KEY)
+019B C002       205            push AR2
+019D 7AF0       205            mov R2, #240
+019F 12002E     205            lcall ?Wait_Milli_Seconds
+01A2 D002       205            pop AR2
+01A4 C002       206            push AR2
+01A6 7AF0       206            mov R2, #240
+01A8 12002E     206            lcall ?Wait_Milli_Seconds
+01AB D002       206            pop AR2
+01AD            207            
+01AD 753384     208            mov Melody_Reload+1, #high(D4_KEY)
+01B0 753205     209            mov Melody_Reload+0, #low(D4_KEY)
+01B3 C002       210            push AR2
+01B5 7A78       210            mov R2, #120
+01B7 12002E     210            lcall ?Wait_Milli_Seconds
+01BA D002       210            pop AR2
+01BC            211   
+01BC 753384     212            mov Melody_Reload+1, #high(C4_KEY)
+01BF 753205     213            mov Melody_Reload+0, #low(C4_KEY)
+01C2 C002       214            push AR2
+01C4 7A78       214            mov R2, #120
+01C6 12002E     214            lcall ?Wait_Milli_Seconds
+01C9 D002       214            pop AR2
+01CB            215   
+01CB 7533BE     216            mov Melody_Reload+1, #high(B4_KEY)
+01CE 75325F     217            mov Melody_Reload+0, #low(B4_KEY)
+01D1 C002       218            push AR2
+01D3 7A78       218            mov R2, #120
+01D5 12002E     218            lcall ?Wait_Milli_Seconds
+01D8 D002       218            pop AR2
+01DA            219   
+01DA 7533C2     220            mov Melody_Reload+1, #high(C5_KEY)
+01DD 753212     221            mov Melody_Reload+0, #low(C5_KEY)
+01E0 C002       222            push AR2
+01E2 7A78       222            mov R2, #120
+01E4 12002E     222            lcall ?Wait_Milli_Seconds
+01E7 D002       222            pop AR2
+01E9            223   
+01E9 7533CE     224            mov Melody_Reload+1, #high(E5_KEY)
+01EC 7532D7     225            mov Melody_Reload+0, #low(E5_KEY)
+01EF C002       226            push AR2
+01F1 7AF0       226            mov R2, #240
+01F3 12002E     226            lcall ?Wait_Milli_Seconds
+01F6 D002       226            pop AR2
+01F8 C002       227            push AR2
+01FA 7AF0       227            mov R2, #240
+01FC 12002E     227            lcall ?Wait_Milli_Seconds
+01FF D002       227            pop AR2
+0201            228   ;-----------------------------------------
+0201 7533D1     229            mov Melody_Reload+1, #high(F5_KEY)
+0204 753296     230            mov Melody_Reload+0, #low(F5_KEY)
+0207 C002       231            push AR2
+0209 7A78       231            mov R2, #120
+020B 12002E     231            lcall ?Wait_Milli_Seconds
+020E D002       231            pop AR2
+0210            232   
+0210 7533CE     233            mov Melody_Reload+1, #high(E5_KEY)
+0213 7532D7     234            mov Melody_Reload+0, #low(E5_KEY)
+0216 C002       235            push AR2
+0218 7A78       235            mov R2, #120
+021A 12002E     235            lcall ?Wait_Milli_Seconds
+021D D002       235            pop AR2
+021F            236   
+021F 7533CB     237            mov Melody_Reload+1, #high(Ds5_KEY)
+0222 7532EB     238            mov Melody_Reload+0, #low(Ds5_KEY)
+0225 C002       239            push AR2
+0227 7A78       239            mov R2, #120
+0229 12002E     239            lcall ?Wait_Milli_Seconds
+022C D002       239            pop AR2
+022E            240   
+022E 7533CE     241            mov Melody_Reload+1, #high(E5_KEY)
+0231 7532D7     242            mov Melody_Reload+0, #low(E5_KEY)
+0234 C002       243            push AR2
+0236 7A78       243            mov R2, #120
+0238 12002E     243            lcall ?Wait_Milli_Seconds
+023B D002       243            pop AR2
+023D            244   ;-----------------------------------------
+023D 7533DF     245            mov Melody_Reload+1, #high(B5_KEY)
+0240 753230     246            mov Melody_Reload+0, #low(B5_KEY)
+0243 C002       247            push AR2
+0245 7A78       247            mov R2, #120
+0247 12002E     247            lcall ?Wait_Milli_Seconds
+024A D002       247            pop AR2
+024C            248   
+024C 7533DB     249            mov Melody_Reload+1, #high(A5_KEY)
+024F 753229     250            mov Melody_Reload+0, #low(A5_KEY)
+0252 C002       251            push AR2
+0254 7A78       251            mov R2, #120
+0256 12002E     251            lcall ?Wait_Milli_Seconds
+0259 D002       251            pop AR2
+025B            252   
+025B 7533D8     253            mov Melody_Reload+1, #high(Gs5_KEY)
+025E 7532F7     254            mov Melody_Reload+0, #low(Gs5_KEY)
+0261 C002       255            push AR2
+0263 7A78       255            mov R2, #120
+0265 12002E     255            lcall ?Wait_Milli_Seconds
+0268 D002       255            pop AR2
+026A            256   
+026A 7533DB     257            mov Melody_Reload+1, #high(A5_KEY)
+026D 753229     258            mov Melody_Reload+0, #low(A5_KEY)
+0270 C002       259            push AR2
+0272 7A78       259            mov R2, #120
+0274 12002E     259            lcall ?Wait_Milli_Seconds
+0277 D002       259            pop AR2
+0279            260   ;--------------------------------------
+0279 7533DF     261            mov Melody_Reload+1, #high(B5_KEY)
+027C 753230     262            mov Melody_Reload+0, #low(B5_KEY)
+027F C002       263            push AR2
+0281 7A78       263            mov R2, #120
+0283 12002E     263            lcall ?Wait_Milli_Seconds
+0286 D002       263            pop AR2
+0288            264   
+0288 7533DB     265            mov Melody_Reload+1, #high(A5_KEY)
+028B 753229     266            mov Melody_Reload+0, #low(A5_KEY)
+028E C002       267            push AR2
+0290 7A78       267            mov R2, #120
+0292 12002E     267            lcall ?Wait_Milli_Seconds
+0295 D002       267            pop AR2
+0297            268   
+0297 7533D8     269            mov Melody_Reload+1, #high(Gs5_KEY)
+029A 7532F7     270            mov Melody_Reload+0, #low(Gs5_KEY)
+029D C002       271            push AR2
+029F 7A78       271            mov R2, #120
+02A1 12002E     271            lcall ?Wait_Milli_Seconds
+02A4 D002       271            pop AR2
+02A6            272   
+02A6 7533DB     273            mov Melody_Reload+1, #high(A5_KEY)
+02A9 753229     274            mov Melody_Reload+0, #low(A5_KEY)
+02AC C002       275            push AR2
+02AE 7A78       275            mov R2, #120
+02B0 12002E     275            lcall ?Wait_Milli_Seconds
+02B3 D002       275            pop AR2
+02B5            276   
+02B5 7533E1     277            mov Melody_Reload+1, #high(C6_KEY)
+02B8 753205     278            mov Melody_Reload+0, #low(C6_KEY)
+02BB C002       279            push AR2
+02BD 7AF0       279            mov R2, #240
+02BF 12002E     279            lcall ?Wait_Milli_Seconds
+02C2 D002       279            pop AR2
+02C4 C002       280            push AR2
+02C6 7AF0       280            mov R2, #240
+02C8 12002E     280            lcall ?Wait_Milli_Seconds
+02CB D002       280            pop AR2
+02CD            281            
+02CD            282   ;----------------------------------------
+02CD 7533DB     283            mov Melody_Reload+1, #high(A5_KEY)
+02D0 753229     284            mov Melody_Reload+0, #low(A5_KEY)
+02D3 C002       285            push AR2
+02D5 7AF0       285            mov R2, #240
+02D7 12002E     285            lcall ?Wait_Milli_Seconds
+02DA D002       285            pop AR2
+02DC            286   
+02DC 7533E1     287            mov Melody_Reload+1, #high(C6_KEY)
+02DF 753205     288            mov Melody_Reload+0, #low(C6_KEY)
+02E2 C002       289            push AR2
+02E4 7AF0       289            mov R2, #240
+02E6 12002E     289            lcall ?Wait_Milli_Seconds
+02E9 D002       289            pop AR2
+02EB            290   ;-----------------------------------------
+02EB 7533DF     291            mov Melody_Reload+1, #high(B5_KEY)
+02EE 753230     292            mov Melody_Reload+0, #low(B5_KEY)
+02F1 C002       293            push AR2
+02F3 7AF0       293            mov R2, #240
+02F5 12002E     293            lcall ?Wait_Milli_Seconds
+02F8 D002       293            pop AR2
+02FA            294   
+02FA 7533DB     295            mov Melody_Reload+1, #high(A5_KEY)
+02FD 753229     296            mov Melody_Reload+0, #low(A5_KEY)
+0300 C002       297            push AR2
+0302 7AF0       297            mov R2, #240
+0304 12002E     297            lcall ?Wait_Milli_Seconds
+0307 D002       297            pop AR2
+0309            298   
+0309 7533D6     299            mov Melody_Reload+1, #high(G5_KEY)
+030C 753229     300            mov Melody_Reload+0, #low(A5_KEY)
+030F C002       301            push AR2
+0311 7AF0       301            mov R2, #240
+0313 12002E     301            lcall ?Wait_Milli_Seconds
+0316 D002       301            pop AR2
+0318            302   
+0318 7533DB     303            mov Melody_Reload+1, #high(A5_KEY)
+031B 753229     304            mov Melody_Reload+0, #low(A5_KEY)
+031E C002       305            push AR2
+0320 7AF0       305            mov R2, #240
+0322 12002E     305            lcall ?Wait_Milli_Seconds
+0325 D002       305            pop AR2
+0327            306   ;-----------------------------------------
+0327 7533DF     307            mov Melody_Reload+1, #high(B5_KEY)
+032A 753230     308            mov Melody_Reload+0, #low(B5_KEY)
+032D C002       309            push AR2
+032F 7AF0       309            mov R2, #240
+0331 12002E     309            lcall ?Wait_Milli_Seconds
+0334 D002       309            pop AR2
+0336            310   
+0336 7533DB     311            mov Melody_Reload+1, #high(A5_KEY)
+0339 753229     312            mov Melody_Reload+0, #low(A5_KEY)
+033C C002       313            push AR2
+033E 7AF0       313            mov R2, #240
+0340 12002E     313            lcall ?Wait_Milli_Seconds
+0343 D002       313            pop AR2
+0345            314   
+0345 7533D6     315            mov Melody_Reload+1, #high(G5_KEY)
+0348 753229     316            mov Melody_Reload+0, #low(A5_KEY)
+034B C002       317            push AR2
+034D 7AF0       317            mov R2, #240
+034F 12002E     317            lcall ?Wait_Milli_Seconds
+0352 D002       317            pop AR2
+0354            318   
+0354 7533DB     319            mov Melody_Reload+1, #high(A5_KEY)
+0357 753229     320            mov Melody_Reload+0, #low(A5_KEY)
+035A C002       321            push AR2
+035C 7AF0       321            mov R2, #240
+035E 12002E     321            lcall ?Wait_Milli_Seconds
+0361 D002       321            pop AR2
+0363            322   ;-----------------------------------------
+0363 7533DF     323            mov Melody_Reload+1, #high(B5_KEY)
+0366 753230     324            mov Melody_Reload+0, #low(B5_KEY)
+0369 C002       325            push AR2
+036B 7AF0       325            mov R2, #240
+036D 12002E     325            lcall ?Wait_Milli_Seconds
+0370 D002       325            pop AR2
+0372            326   
+0372 7533DB     327            mov Melody_Reload+1, #high(A5_KEY)
+0375 753229     328            mov Melody_Reload+0, #low(A5_KEY)
+0378 C002       329            push AR2
+037A 7AF0       329            mov R2, #240
+037C 12002E     329            lcall ?Wait_Milli_Seconds
+037F D002       329            pop AR2
+0381            330   
+0381 7533D6     331            mov Melody_Reload+1, #high(G5_KEY)
+0384 753229     332            mov Melody_Reload+0, #low(A5_KEY)
+0387 C002       333            push AR2
+0389 7AF0       333            mov R2, #240
+038B 12002E     333            lcall ?Wait_Milli_Seconds
+038E D002       333            pop AR2
+0390            334            
+0390 7533D4     335            mov Melody_Reload+1, #high(Fs5_KEY)
+0393 753230     336            mov Melody_Reload+0, #low(Fs5_KEY)
+0396 C002       337            push AR2
+0398 7AF0       337            mov R2, #240
+039A 12002E     337            lcall ?Wait_Milli_Seconds
+039D D002       337            pop AR2
+039F            338   
+039F 7533CE     339            mov Melody_Reload+1, #high(E5_KEY)
+03A2 7532D7     340            mov Melody_Reload+0, #low(E5_KEY)
+03A5 C002       341            push AR2
+03A7 7AF0       341            mov R2, #240
+03A9 12002E     341            lcall ?Wait_Milli_Seconds
+03AC D002       341            pop AR2
+03AE C002       342            push AR2
+03B0 7AF0       342            mov R2, #240
+03B2 12002E     342            lcall ?Wait_Milli_Seconds
+03B5 D002       342            pop AR2
+03B7            343   
+03B7            344   forever:
+03B7 C28C       345            clr TR0
+03B9 80FC       346            sjmp forever
+03BB            347   END

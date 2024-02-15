@@ -138,8 +138,8 @@ Timer0_Init:
 	anl a, #0xf0 ; 11110000 Clear the bits for timer 0
 	orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
 	mov TMOD, a
-	;mov TH0, #high(B3_KEY)
-	;mov TL0, #low(B3_KEY)
+	mov TH0, Melody_Reload+1
+	mov TL0, Melody_Reload+0
 	; Enable the timer and interrupts
     ;setb ET0  ; Enable timer 0 interrupt
     setb TR0  ; Start timer 0

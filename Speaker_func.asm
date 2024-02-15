@@ -128,39 +128,30 @@ $LIST
 ;                     1234567890123456    <- This helps determine the location of the counter
 Initial_Message:  db '  >Music Test<  ', 0
 clear_screen:	  db '                ', 0
-;---------------------------------;
-; Routine to initialize the ISR   ;
-; for timer 0                     ;
-;---------------------------------;
-Timer0_Init:
-	orl CKCON, #0b00001000 ; Input for timer 0 is sysclk/1
-	mov a, TMOD
-	anl a, #0xf0 ; 11110000 Clear the bits for timer 0
-	orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
-	mov TMOD, a
-	;mov TH0, #high(B3_KEY)
-	;mov TL0, #low(B3_KEY)
-	; Enable the timer and interrupts
-    ;setb ET0  ; Enable timer 0 interrupt
-    setb TR0  ; Start timer 0
-	ret
 
 ;---------------------------------;
-; ISR for timer 0.  Set to execute;
-; every 1/4096Hz to generate a    ;
-; 2048 Hz wave at pin SOUND_OUT   ;
+; Define special chars here       ;
 ;---------------------------------;
-Timer0_ISR:
-	;clr TF0  ; According to the data sheet this is done for us already.
-	; Timer 0 doesn't have 16-bit auto-reload, so
-	clr TR0
-	;mov TH0, #high(TIMER0_RELOAD)
-	;mov TL0, #low(TIMER0_RELOAD)
-	mov TH0, Melody_Reload+1
-	mov TL0, Melody_Reload+0
-	setb TR0
-	cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
-	reti
+fire:
+	mov   A,#40H         ;Load the location where we want to store
+    lcall ?WriteCommand    ;Send the command
+    mov   A,#09H         ;Load row 1 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#00H         ;Load row 2 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#14H         ;Load row 3 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#06H         ;Load row 4 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#0FH         ;Load row 5 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#1BH         ;Load row 6 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#11H         ;Load row 7 data
+    acall ?WriteData   ;Send the data
+    mov   A,#0EH         ;Load row 8 data
+    lcall ?WriteData   ;Send the data
+    ret                  ;Return from routine
 
 double_eighth:
     mov   A,#48H         ;Load the location where we want to store
@@ -245,7 +236,40 @@ bell:
     lcall ?WriteData   ;Send the data
     ret                  ;Return from routine
 
-	
+;---------------------------------;
+; Routine to initialize the ISR   ;
+; for timer 0                     ;
+;---------------------------------;
+Timer0_Init:
+	orl CKCON, #0b00001000 ; Input for timer 0 is sysclk/1
+	mov a, TMOD
+	anl a, #0xf0 ; 11110000 Clear the bits for timer 0
+	orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
+	mov TMOD, a
+	mov TH0, #high(B3_KEY)
+	mov TL0, #low(B3_KEY)
+	; Enable the timer and interrupts
+    ;setb ET0  ; Enable timer 0 interrupt
+    setb TR0  ; Start timer 0
+	ret
+
+;---------------------------------;
+; ISR for timer 0.  Set to execute;
+; every 1/4096Hz to generate a    ;
+; 2048 Hz wave at pin SOUND_OUT   ;
+;---------------------------------;
+Timer0_ISR:
+	;clr TF0  ; According to the data sheet this is done for us already.
+	; Timer 0 doesn't have 16-bit auto-reload, so
+	clr TR0
+	;mov TH0, #high(TIMER0_RELOAD)
+	;mov TL0, #low(TIMER0_RELOAD)
+	mov TH0, Melody_Reload+1
+	mov TL0, Melody_Reload+0
+	setb TR0
+	cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
+	reti
+
 Display_special_char1:
 	lcall heart
 	mov a, #0x81
@@ -316,7 +340,8 @@ clear_screen_func:
 	Send_Constant_String(#clear_screen)
 	Set_Cursor(2,1)
 	Send_Constant_String(#clear_screen)
-    ret
+    reti
+    
     
 ;---------------------------------;
 ; Main program. Includes hardware ;
@@ -332,15 +357,15 @@ main:
     mov P1M2, #0x00
     mov P3M2, #0x00
     mov P3M2, #0x00
-    
+    lcall Timer0_Init
     setb EA   ; Enable Global interrupts
     lcall LCD_4BIT
     Send_Constant_String(#Initial_Message)
-
+	
 Turkish_March:
 	setb ET0
 
-    ;lcall Display_special_char1
+    lcall Display_special_char1
 
 	mov Melody_Reload+1, #high(B3_KEY)
 	mov Melody_Reload+0, #low(B3_KEY)
@@ -358,7 +383,7 @@ Turkish_March:
 	mov Melody_Reload+0, #low(A3_KEY)
 	Wait_Milli_Seconds(#120)
 
-	;lcall clear_screen_func
+	lcall clear_screen_func
 ;----------------------------------------
 	lcall Display_special_char2
 
@@ -546,7 +571,6 @@ Turkish_March:
 
 	lcall clear_screen_func
     lcall Display_special_char1
-	ret
 
 forever:
 	clr TR0

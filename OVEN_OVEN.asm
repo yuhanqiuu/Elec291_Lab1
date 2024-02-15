@@ -83,7 +83,7 @@ MUTE_KEY EQU 0
 ;---------------------------------;
 ; Define any buttons & pins here  ;
 ;---------------------------------;
-SOUND_OUT   equ p1.7 ; speaker pin
+SOUND_OUT   EQU P1.7 ; speaker pin
 PWM_OUT    EQU P1.0 ; Logic 1 = oven on
 ;---------------------------------------------
 
@@ -300,10 +300,10 @@ Timer0_Init:
 	anl a, #0xf0 ; 11110000 Clear the bits for timer 0
 	orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
 	mov TMOD, a
-	mov TH0, #high(B3_KEY)
-	mov TL0, #low(B3_KEY)
+	mov TH0, #high(TIMER0_RELOAD)
+	mov TL0, #low(TIMER0_RELOAD)
 	; Enable the timer and interrupts
-    ;setb ET0  ; Enable timer 0 interrupt
+    setb ET0  ; Enable timer 0 interrupt
     setb TR0  ; Start timer 0
 	ret
 
@@ -316,8 +316,6 @@ Timer0_ISR:
 	;clr TF0  ; According to the data sheet this is done for us already.
 	; Timer 0 doesn't have 16-bit auto-reload, so
 	clr TR0
-	;mov TH0, #high(TIMER0_RELOAD)
-	;mov TL0, #low(TIMER0_RELOAD)
 	mov TH0, Melody_Reload+1
 	mov TL0, Melody_Reload+0
 	setb TR0
@@ -398,7 +396,7 @@ Init_All:
 	setb TR1
 	
 	; Using timer 0 for delay functions.  Initialize here:
-	clr	TR0 ; Stop timer 0
+	;clr	TR0 ; Stop timer 0
 	orl	CKCON,#0x08 ; CLK is the input for timer 0
 	anl	TMOD,#0xF0 ; Clear the configuration bits for timer 0
 	orl	TMOD,#0x01 ; Timer 0 in Mode 1: 16-bit timer
@@ -415,21 +413,6 @@ Init_All:
 	orl AINDIDS, #0b10000001 ; Activate AIN0 and AIN7 analog inputs
 	orl ADCCON1, #0x01 ; Enable ADC
 	
-	ret
-
-wait_1ms:
-	clr	TR0 ; Stop timer 0
-	clr	TF0 ; Clear overflow flag
-	mov	TH0, #high(TIMER0_RELOAD_1MS)
-	mov	TL0,#low(TIMER0_RELOAD_1MS)
-	setb TR0
-	jnb	TF0, $ ; Wait for overflow
-	ret
-
-; Wait the number of miliseconds in R2
-waitms:
-	lcall wait_1ms
-	djnz R2, waitms
 	ret
 
 ;---------------------------------;
@@ -454,8 +437,7 @@ LCD_PB:
 	jb P1.5, LCD_PB_Done
 
 	; Debounce
-	mov R2, #50
-	lcall waitms
+	Wait_Milli_Seconds(#50)
 	jb P1.5, LCD_PB_Done
 
 	; Set the LCD data pins to logic 1
@@ -497,8 +479,7 @@ LCD_PB:
 	jnb PB0, start_stop
 
 LCD_PB_Done:
-	mov r2,#20
-	lcall waitms		
+	Wait_Milli_Seconds(#25)		
 	ret
 
 increment_soak_temp:
@@ -783,8 +764,7 @@ check_stop:
 	clr P0.3
 	jb P1.5, stop_PB_Done
 	; Debounce
-	mov R2, #50
-	lcall waitms
+	Wait_Milli_Seconds(#50)
 	jb P1.5, stop_PB_Done
 	setb P0.3
 	clr P0.3
@@ -883,8 +863,9 @@ main:
     
 	lcall Init_All
     lcall LCD_4BIT
-    lcall Timer0_Init
+	lcall Timer0_Init
     lcall Timer2_Init
+	
     setb EA   ; Enable Global interrupts
     ; initial messages in LCD
 	Set_Cursor(1, 1)
@@ -898,6 +879,7 @@ main:
 	mov reflow_temp, #0xE6 ; 230
 	mov reflow_time, #0x1E ; 30
 	mov bcd,#0
+	setb TR2
 	
 	clr start_stop_flag
 	clr FSM_start_flag
@@ -1050,13 +1032,14 @@ intermediate_state_0:
 	
 FSM_state6:
 	cjne a, #6, intermediate_state_0
-	
+	clr TR2
 	setb ET0
 
     lcall Display_special_char1
-
+    clr TR0 
 	mov Melody_Reload+1, #high(B3_KEY)
 	mov Melody_Reload+0, #low(B3_KEY)
+    setb TR0
 	Wait_Milli_Seconds(#120)
 
 	mov Melody_Reload+1, #high(A3_KEY)
@@ -1259,6 +1242,5 @@ FSM_state6:
 
 	lcall clear_screen_func
     lcall Display_special_char1
-
     ljmp main
 END
