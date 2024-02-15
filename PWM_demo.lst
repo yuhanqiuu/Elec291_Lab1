@@ -20,7 +20,7 @@
 0000             22   TIMER2_RELOAD       EQU (65536-(CLK/(16*TIMER2_RATE))) ; Need to change timer 2 input divide to 16 in T2MOD
 0000             23   
 0000             24   ; Output
-0000             25   PWM_OUT    EQU P1.0 ; Logic 1=oven on
+0000             25   PWM_OUT    EQU P1.5 ; Logic 1=oven on
 0000             26   
 0000             27   BSEG
 0000             28   s_flag: dbit 1 ; set to 1 every time a second has passed
@@ -34,7 +34,7 @@
 0000             36   
 0000             37   ; Reset vector
 0000             38   org 0x0000
-0000 020154      39       ljmp main
+0000 020172      39       ljmp main
 0003             40   
 0003             41   ; External interrupt 0 vector (not used in this code)
 0003             42   org 0x0003
@@ -58,7 +58,7 @@
 0024             60            
 0024             61   ; Timer/Counter 2 overflow interrupt vector
 002B             62   org 0x002B
-002B 020111      63            ljmp Timer2_ISR
+002B 02012F      63            ljmp Timer2_ISR
 002E             64   
 002E             65   ; These 'equ' must match the hardware wiring
 002E             66   LCD_RS equ P1.3
@@ -68,96 +68,96 @@
 002E             70   LCD_D6 equ P0.2
 002E             71   LCD_D7 equ P0.3
 002E             72   
-                 74   	$LIST
-00E2             76   
-00E2             77   Init_All:
-00E2             78            ; Configure all the pins for biderectional I/O
-00E2 75AC00      79            mov     P3M1, #0x00
-00E5 75AD00      80            mov     P3M2, #0x00
-00E8 75B300      81            mov     P1M1, #0x00
-00EB 75B400      82            mov     P1M2, #0x00
-00EE 75B100      83            mov     P0M1, #0x00
-00F1 75B200      84            mov     P0M2, #0x00
-00F4             85            
-00F4             86            ; Initialize timer 2 for periodic interrupts
-00F4 75C800      87            mov T2CON, #0 ; Stop timer/counter.  Autoreload mode.
-00F7 75CDD7      88            mov TH2, #high(TIMER2_RELOAD)
-00FA 75CC79      89            mov TL2, #low(TIMER2_RELOAD)
-00FD             90            ; Set the reload value
-00FD 75C9A0      91            mov T2MOD, #0b1010_0000 ; Enable timer 2 autoreload, and clock divider is 16
-0100 75CBD7      92            mov RCMP2H, #high(TIMER2_RELOAD)
-0103 75CA79      93            mov RCMP2L, #low(TIMER2_RELOAD)
-0106             94            ; Init the free running 10 ms counter to zero
-0106 753000      95            mov pwm_counter, #0
-0109             96            ; Enable the timer and interrupts
-0109 439B80      97            orl EIE, #0x80 ; Enable timer 2 interrupt ET2=1
-010C D2CA        98       setb TR2  ; Enable timer 2
-010E             99   
-010E D2AF       100            setb EA ; Enable global interrupts
-0110            101            
-0110 22         102            ret
-0111            103   
-0111            104   ;---------------------------------;
-0111            105   ; ISR for timer 2                 ;
-0111            106   ;---------------------------------;
-0111            107   Timer2_ISR:
-0111 C2CF       108            clr TF2  ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR.  It is bit addressable.
-0113 C0D0       109            push psw
-0115 C0E0       110            push acc
-0117            111            
-0117 0530       112            inc pwm_counter
-0119 C3         113            clr c
-011A E531       114            mov a, pwm
-011C 9530       115            subb a, pwm_counter ; If pwm_counter <= pwm then c=1
-011E B3         116            cpl c
-011F 9290       117            mov PWM_OUT, c
-0121            118            
-0121 E530       119            mov a, pwm_counter
-0123 B46407     120            cjne a, #100, Timer2_ISR_done
-0126 753000     121            mov pwm_counter, #0
-0129 0532       122            inc seconds ; It is super easy to keep a seconds count here
-012B D200       123            setb s_flag
-012D            124   
-012D            125   Timer2_ISR_done:
-012D D0E0       126            pop acc
-012F D0D0       127            pop psw
-0131 32         128            reti
-0132            129   
-0132            130   line1:
-0132 50574D20   131            DB 'PWM Example     '
+                 74   $LIST
+0100             76   
+0100             77   Init_All:
+0100             78            ; Configure all the pins for biderectional I/O
+0100 75AC00      79            mov     P3M1, #0x00
+0103 75AD00      80            mov     P3M2, #0x00
+0106 75B300      81            mov     P1M1, #0x00
+0109 75B400      82            mov     P1M2, #0x00
+010C 75B100      83            mov     P0M1, #0x00
+010F 75B200      84            mov     P0M2, #0x00
+0112             85            
+0112             86            ; Initialize timer 2 for periodic interrupts
+0112 75C800      87            mov T2CON, #0 ; Stop timer/counter.  Autoreload mode.
+0115 75CDD7      88            mov TH2, #high(TIMER2_RELOAD)
+0118 75CC79      89            mov TL2, #low(TIMER2_RELOAD)
+011B             90            ; Set the reload value
+011B 75C9A0      91            mov T2MOD, #0b1010_0000 ; Enable timer 2 autoreload, and clock divider is 16
+011E 75CBD7      92            mov RCMP2H, #high(TIMER2_RELOAD)
+0121 75CA79      93            mov RCMP2L, #low(TIMER2_RELOAD)
+0124             94            ; Init the free running 10 ms counter to zero
+0124 753000      95            mov pwm_counter, #0
+0127             96            ; Enable the timer and interrupts
+0127 439B80      97            orl EIE, #0x80 ; Enable timer 2 interrupt ET2=1
+012A D2CA        98       setb TR2  ; Enable timer 2
+012C             99   
+012C D2AF       100            setb EA ; Enable global interrupts
+012E            101            
+012E 22         102            ret
+012F            103   
+012F            104   ;---------------------------------;
+012F            105   ; ISR for timer 2                 ;
+012F            106   ;---------------------------------;
+012F            107   Timer2_ISR:
+012F C2CF       108            clr TF2  ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR.  It is bit addressable.
+0131 C0D0       109            push psw
+0133 C0E0       110            push acc
+0135            111            
+0135 0530       112            inc pwm_counter
+0137 C3         113            clr c
+0138 E531       114            mov a, pwm
+013A 9530       115            subb a, pwm_counter ; If pwm_counter <= pwm then c=1
+013C B3         116            cpl c
+013D 9295       117            mov PWM_OUT, c
+013F            118            
+013F E530       119            mov a, pwm_counter
+0141 B46407     120            cjne a, #100, Timer2_ISR_done
+0144 753000     121            mov pwm_counter, #0
+0147 0532       122            inc seconds ; It is super easy to keep a seconds count here
+0149 D200       123            setb s_flag
+014B            124   
+014B            125   Timer2_ISR_done:
+014B D0E0       126            pop acc
+014D D0D0       127            pop psw
+014F 32         128            reti
+0150            129   
+0150            130   line1:
+0150 50574D20   131            DB 'PWM Example     '
      4578616D
      706C6520
      20202020
-0142 00         132            DB 0
-0143            133   line2:
-0143 43686B20   134            DB 'Chk pin 15:P1.0 '
+0160 00         132            DB 0
+0161            133   line2:
+0161 43686B20   134            DB 'Chk pin 15:P1.0 '
      70696E20
      31353A50
      312E3020
-0153 00         135            DB 0
-0154            136   
-0154            137   main:
-0154 75817F     138            mov sp, #07FH
-0157 1200E2     139            lcall INIT_ALL
-015A 120087     140       lcall LCD_4BIT
-015D            141   
-015D C0E0       142            push acc
-015F 7401       142            mov a, #1
-0161 14         142            dec a
-0162 1200C7     142            lcall ?Set_Cursor_1 ; Select column and row
-0165 D0E0       142            pop acc
-0167 900132     143            mov dptr, #line1
-016A 1200BA     144            lcall ?Send_Constant_String
-016D C0E0       145            push acc
-016F 7401       145            mov a, #1
-0171 14         145            dec a
-0172 1200C5     145            lcall ?Set_Cursor_2 ; Select column and row
-0175 D0E0       145            pop acc
-0177 900143     146            mov dptr, #Line2
-017A 1200BA     147            lcall ?Send_Constant_String
-017D            148            
-017D 753114     149            mov pwm, #20 ; The pwm in percentage (0 to 100) we want.  Change and check with oscilloscope.
-0180            150   
-0180            151   Forever:
-0180 020180     152            ljmp Forever    
-0183            153   END
+0171 00         135            DB 0
+0172            136   
+0172            137   main:
+0172 75817F     138            mov sp, #07FH
+0175 120100     139            lcall INIT_ALL
+0178 120087     140       lcall LCD_4BIT
+017B            141   
+017B C0E0       142            push acc
+017D 7401       142            mov a, #1
+017F 14         142            dec a
+0180 1200C7     142            lcall ?Set_Cursor_1 ; Select column and row
+0183 D0E0       142            pop acc
+0185 900150     143            mov dptr, #line1
+0188 1200BA     144            lcall ?Send_Constant_String
+018B C0E0       145            push acc
+018D 7401       145            mov a, #1
+018F 14         145            dec a
+0190 1200C5     145            lcall ?Set_Cursor_2 ; Select column and row
+0193 D0E0       145            pop acc
+0195 900161     146            mov dptr, #Line2
+0198 1200BA     147            lcall ?Send_Constant_String
+019B            148            
+019B 753132     149            mov pwm, #50 ; The pwm in percentage (0 to 100) we want.  Change and check with oscilloscope.
+019E            150   
+019E            151   Forever:
+019E 02019E     152            ljmp Forever    
+01A1            153   END

@@ -340,6 +340,7 @@ Timer2_Init:
 	mov Count1ms+1, a
 	mov pwm, #0
 	; Enable the timer and interrupts
+	mov pwm_counter,#0
 	orl EIE, #0x80 ; Enable timer 2 interrupt ET2=1
     setb TR2  ; Enable timer 2
 	ret
@@ -520,8 +521,6 @@ Display_formated_BCD:
 	;send the BCD value to the MATLAB script
 	Send_BCD(bcd+3)
 	Send_BCD(bcd+2)
-	mov a, #'.'
-	lcall putchar
 	Send_BCD(bcd+1)
 	mov a, #'\r'
 	lcall putchar
@@ -881,7 +880,6 @@ main:
 	setb TR2
 	
 	clr start_stop_flag
-	clr FSM_start_flag
     clr TR0
 ;---------------------------------;
 ; 		FSM	funtion			      ;
@@ -895,12 +893,14 @@ FSM_state0: ;initial state
 	lcall Display_PushButtons_LCD ;Displays values in pushbuttons
 	lcall Display_temp
     jnb start_stop_flag, FSM_state0_done
-    setb FSM_start_flag
     mov seconds, #0x00     ; set time to 0
     mov FSM_state, #1   ; set FSM_state to 1, next state is state1
     Set_Cursor(2, 1)
     Send_Constant_String(#Ramp_to_soak)
+	setb TR0
 	Wait_Milli_Seconds(#250)
+	Wait_Milli_Seconds(#250)
+	clr TR0
 
 FSM_state0_done:
     ljmp FSM   ;jump back to FSM and reload FSM_state to a

@@ -22,7 +22,7 @@ TIMER2_RATE         EQU 100      ; 100Hz or 10ms
 TIMER2_RELOAD       EQU (65536-(CLK/(16*TIMER2_RATE))) ; Need to change timer 2 input divide to 16 in T2MOD
 
 ; Output
-PWM_OUT    EQU P1.0 ; Logic 1=oven on
+PWM_OUT    EQU P1.5 ; Logic 1=oven on
 
 BSEG
 s_flag: dbit 1 ; set to 1 every time a second has passed
@@ -146,7 +146,7 @@ main:
 	mov dptr, #Line2
 	lcall ?Send_Constant_String
 	
-	mov pwm, #20 ; The pwm in percentage (0 to 100) we want.  Change and check with oscilloscope.
+	mov pwm, #50 ; The pwm in percentage (0 to 100) we want.  Change and check with oscilloscope.
 
 Forever:
 	ljmp Forever	
