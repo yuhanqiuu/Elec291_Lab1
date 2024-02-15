@@ -4,7 +4,7 @@ import matplotlib.animation as animation
 import sys, time, math
 import pandas as pd
 
-xsize=100
+xsize=800
 
 import time 
 import serial 
