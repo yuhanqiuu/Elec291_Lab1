@@ -21,10 +21,10 @@ CLK           EQU 16600000 ; Microcontroller system frequency in Hz
 TIMER0_RATE   EQU 4096     ; 2048Hz squarewave (peak amplitude of CEM-1203 speaker)
 TIMER0_RELOAD EQU ((65536-(CLK/TIMER0_RATE)))
 BAUD              EQU 115200 ; Baud rate of UART in bps
-TIMER1_RELOAD     EQU (0x100-(CLK/(16*BAUD)))
+TIMER1_RELOAD     EQU (0x100-(CLK/(BAUD)))
 TIMER0_RELOAD_1MS EQU (0x10000-(CLK/1000))
-TIMER2_RATE   EQU 1000     ; 1000Hz, for a timer tick of 1ms
-TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
+TIMER2_RATE   EQU 100     ; 100Hz, for a timer tick of 1s
+TIMER2_RELOAD EQU ((65536-(CLK/(16*TIMER2_RATE))))
 
 ;---------------------------------;
 ; Define any buttons & pins here  ;
@@ -166,7 +166,7 @@ Timer2_Init:
 	mov TH2, #high(TIMER2_RELOAD)
 	mov TL2, #low(TIMER2_RELOAD)
 	; Set the reload value
-	orl T2MOD, #0x80 ; Enable timer 2 autoreload
+	mov T2MOD, #0b1010_0000 ; Enable timer 2 autoreload, and clock divider is 16
 	mov RCMP2H, #high(TIMER2_RELOAD)
 	mov RCMP2L, #low(TIMER2_RELOAD)
 	; Init One millisecond interrupt counter.  It is a 16-bit variable made with two 8-bit parts
@@ -196,6 +196,7 @@ Timer2_ISR:
 	cpl c
 	mov PWM_OUT, c
 	mov a, pwm_counter
+
 	cjne a, #100, Timer2_ISR_done
 	mov pwm_counter, #0
 	inc seconds
@@ -395,8 +396,6 @@ Display_formated_BCD:
 	Display_BCD(bcd+3)
 	Display_BCD(bcd+2) ;this is just in case temperatures exceed 100C and we're in deg F
 	
-
-
 	;send the BCD value to the MATLAB script
 	Send_BCD(bcd+3)
 	Send_BCD(bcd+2)
@@ -577,6 +576,7 @@ main:
 	mov soak_time, #0x3C ; 60
 	mov reflow_temp, #0xE6 ; 230
 	mov reflow_time, #0x1E ; 30
+	mov bcd,#0
 	
 	clr start_stop_flag
 	clr FSM_start_flag
@@ -591,6 +591,8 @@ FSM_state0:
     mov pwm, #0 ; power variable
 	lcall LCD_PB ; calls and checks the pushbuttons
 	lcall Display_PushButtons_LCD ;Displays values in pushbuttons
+	;Set_Cursor(1, 4)
+	;lcall Display_Data
     jnb start_stop_flag, FSM_state0_done
     setb FSM_start_flag
     mov seconds, #0x00     ; set time to 0
@@ -627,6 +629,7 @@ abort:
 	lcall Compare_temp
 	jb mf, continue ; if temp is larger then 50 degree, go back to continue
     mov FSM_state, #0   ; abort the FSM
+	ljmp main
 
 stop_state:
     clr TR2
@@ -645,6 +648,7 @@ FSM_state2:
     Send_Constant_String(#Soak_display)
     clr c   ; ! i don't know what is c 
 	jnb s_flag, FSM_state2_done
+	clr s_flag
 	lcall Display_Data
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
     subb a, seconds    ; temp is our currect sec
@@ -662,6 +666,7 @@ FSM_state3:
     clr c   ; ! i don't know what is c 
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
 	jnb s_flag, FSM_state3_done
+	clr s_flag
 	lcall Display_Data
 	mov a, reflow_temp    ; set a to reflow temp
 	lcall Compare_temp
@@ -680,13 +685,14 @@ intermediate_stop_jump:
 FSM_state4:
     cjne a, #4, FSM_state5
     mov pwm, #20
-    mov a, reflow_time    ; set a to reflow time
     Set_Cursor(2, 1)
     Send_Constant_String(#Reflow_display)
     clr c   ; ! i don't know what is c 
 	jnb s_flag, FSM_state4_done
+	clr s_flag
 	lcall Display_Data
     jnb start_stop_flag, intermediate_stop_jump; checks the flag if 0, then means stop was pressed, if 1 keep on going
+	mov a, reflow_time    ; set a to reflow time
     subb a, seconds    ; temp is our currect sec
     jnc FSM_state4_done
     mov seconds, #0x00     ; set time to 0
@@ -700,9 +706,10 @@ FSM_state5:
     
     Set_Cursor(2, 1)
     Send_Constant_String(#Cooling_display)
-    clr c   ; ! i don't know what is c
+    clr c
     jnb start_stop_flag, intermediate_stop_jump ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
 	jnb s_flag, FSM_state5_done
+	clr s_flag
 	lcall Display_Data
 	mov a, #0x3C    ; set a to 60
 	lcall Compare_temp
@@ -711,5 +718,5 @@ FSM_state5:
     mov seconds, #0x00     ; set time to 0
     mov FSM_state, #0
 FSM_state5_done:
-    ljmp FSM
+    ljmp main
 END
