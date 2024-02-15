@@ -201,6 +201,8 @@ Timer2_ISR:
 	inc seconds
 	setb s_flag
 	
+	
+	
 ;	jb FSM_start_flag, check_stop
 	
 Timer2_ISR_done:
@@ -608,6 +610,8 @@ FSM_state1:
     jc abort
 continue:
     clr c   ; ! i don't know what is c
+	jnb s_flag, FSM_state1_done
+	clr s_flag
 	lcall Display_Data
 	mov a, soak_temp    ; set a to soak temp
 	lcall Compare_temp
@@ -618,6 +622,7 @@ FSM_state1_done:
     ljmp FSM
 abort:
     mov a, #0x32  ; set a to 50 degree
+	jnb s_flag, FSM_state1_done
 	lcall Display_Data
 	lcall Compare_temp
 	jb mf, continue ; if temp is larger then 50 degree, go back to continue
@@ -639,6 +644,7 @@ FSM_state2:
     Set_Cursor(2, 1)
     Send_Constant_String(#Soak_display)
     clr c   ; ! i don't know what is c 
+	jnb s_flag, FSM_state2_done
 	lcall Display_Data
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
     subb a, seconds    ; temp is our currect sec
@@ -655,6 +661,7 @@ FSM_state3:
     Send_Constant_String(#Ramp_to_peak)
     clr c   ; ! i don't know what is c 
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+	jnb s_flag, FSM_state3_done
 	lcall Display_Data
 	mov a, reflow_temp    ; set a to reflow temp
 	lcall Compare_temp
@@ -677,6 +684,7 @@ FSM_state4:
     Set_Cursor(2, 1)
     Send_Constant_String(#Reflow_display)
     clr c   ; ! i don't know what is c 
+	jnb s_flag, FSM_state4_done
 	lcall Display_Data
     jnb start_stop_flag, intermediate_stop_jump; checks the flag if 0, then means stop was pressed, if 1 keep on going
     subb a, seconds    ; temp is our currect sec
@@ -694,6 +702,7 @@ FSM_state5:
     Send_Constant_String(#Cooling_display)
     clr c   ; ! i don't know what is c
     jnb start_stop_flag, intermediate_stop_jump ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
+	jnb s_flag, FSM_state5_done
 	lcall Display_Data
 	mov a, #0x3C    ; set a to 60
 	lcall Compare_temp
