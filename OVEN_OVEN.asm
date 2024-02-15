@@ -522,6 +522,7 @@ Display_formated_BCD:
 	Send_BCD(bcd+3)
 	Send_BCD(bcd+2)
 	Send_BCD(bcd+1)
+	Send_BCD(bcd+0)
 	mov a, #'\r'
 	lcall putchar
 	mov a, #'\n'
