@@ -66,11 +66,11 @@ org 0x002B
 ;                	  1234567890123456    <- This helps determine the location of the counter
 To_Message:  	  db 'To=xxxC Tj= 22C ', 0
 Time_temp_display:db 'sxxx,xx rxxx,xx ', 0 ; soak temp,time reflow temp,time
-Ramp_to_soak:	  db 'RampToSoak s=xxx', 0 ; state 1 display
-Soak_display: 	  db 'Soak 		 s=xxx', 0 ; state 2 display
-Ramp_to_peak: 	  db 'RampToPeak s=xxx', 0 ; state 3 display
-Reflow_display:   db 'Reflow 	 s=xxx', 0 ; state 4 display
-Cooling_display:  db 'Cooling 	 s=xxx', 0 ; state 5 display
+Ramp_to_soak:	  db 'RampToSoak s=', 0 ; state 1 display
+Soak_display: 	  db 'Soak       s=', 0 ; state 2 display
+Ramp_to_peak: 	  db 'RampToPeak s=', 0 ; state 3 display
+Reflow_display:   db 'Reflow     s=', 0 ; state 4 display
+Cooling_display:  db 'Cooling    s=', 0 ; state 5 display
 ;---------------------------------------------
 cseg
 
@@ -586,7 +586,7 @@ main:
 ;---------------------------------;
 FSM:
     mov a, FSM_state
-FSM_state0:
+FSM_state0: ;initial
     cjne a, #0, FSM_state1
     mov pwm, #0 ; power variable
 	lcall LCD_PB ; calls and checks the pushbuttons
@@ -643,7 +643,6 @@ stop:
 FSM_state2:
     cjne a, #2, FSM_state3
     mov pwm, #20
-    mov a, soak_time    ; set a to soak time
     Set_Cursor(2, 1)
     Send_Constant_String(#Soak_display)
     clr c   ; ! i don't know what is c 
@@ -651,6 +650,7 @@ FSM_state2:
 	clr s_flag
 	lcall Display_Data
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+	mov a, soak_time    ; set a to soak time
     subb a, seconds    ; temp is our currect sec
     jnc FSM_state2_done
     mov seconds, #0x00     ; set time to 0
@@ -677,7 +677,7 @@ FSM_state3_done:
     ljmp FSM
 	
 intermediate_state_0:
-	ljmp FSM_state0
+	ljmp FSM
 
 intermediate_stop_jump:
 	ljmp stop_state
@@ -714,7 +714,7 @@ FSM_state5:
 	mov a, #0x3C    ; set a to 60
 	lcall Compare_temp
 
-    jb mf, FSM_state5_done
+    jnb mf, FSM_state5_done
     mov seconds, #0x00     ; set time to 0
     mov FSM_state, #0
 FSM_state5_done:
