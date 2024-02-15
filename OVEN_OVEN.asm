@@ -303,7 +303,7 @@ Timer0_Init:
 	mov TH0, #high(B3_KEY)
 	mov TL0, #low(B3_KEY)
 	; Enable the timer and interrupts
-    setb ET0  ; Enable timer 0 interrupt
+    ;setb ET0  ; Enable timer 0 interrupt
     setb TR0  ; Start timer 0
 	ret
 
@@ -313,7 +313,6 @@ Timer0_Init:
 ; 2048 Hz wave at pin SOUND_OUT   ;
 ;---------------------------------;
 Timer0_ISR:
-	Timer0_ISR:
 	;clr TF0  ; According to the data sheet this is done for us already.
 	; Timer 0 doesn't have 16-bit auto-reload, so
 	clr TR0
@@ -369,7 +368,6 @@ Timer2_ISR:
 	mov pwm_counter, #0
 	inc seconds
 	setb s_flag
-	jb FSM_start_flag, check_stop
 	
 Timer2_ISR_done:
 
@@ -377,28 +375,6 @@ Timer2_ISR_done:
 	pop psw
 	reti
 
-check_stop:
-	setb PB4
-	; The input pin used to check set to '1'
-	setb P1.5
-	clr P0.3
-	jb P1.5, stop_PB_Done
-	; Debounce
-	mov R2, #50
-	lcall waitms
-	jb P1.5, stop_PB_Done
-	setb P0.3
-	clr P0.3
-	mov c, P1.5
-	mov PB0, c
-	setb P0.3
-	jnb PB0, start_stop_timer
-
-stop_PB_Done:
-	ljmp Timer2_ISR_done
-start_stop_timer:
-	cpl start_stop_flag
-	sjmp stop_PB_Done
 
 ;---------------------------------;
 ; Temperature senseor function    ;
@@ -684,20 +660,20 @@ Display_Data:
 ; Convert to BCD and display
 	lcall hex2bcd
 	lcall Display_formated_BCD
-	reti
+	ret
 returned:
 	lcall hex2bcd
 	Set_Cursor(2,14)
 	mov a,seconds
 	lcall SendToLCD
 
-	reti
+	ret
 	
 too_fucking_hot:
 	Set_Cursor(1,4)
 	Send_Constant_String(#Hot_temp)
 	lcall fire
-	mov a, #0x88
+	mov a, #0x86
 	lcall ?WriteCommand
 	mov a, #0H
 	lcall ?WriteData
@@ -766,13 +742,13 @@ Display_temp:
 	lcall hex2bcd
 	lcall Display_temperature
 
-	reti
+	ret
 
 Display_temperature:
 	Set_Cursor(1, 4) ; display To
 	Display_BCD(bcd+3)
 	Display_BCD(bcd+2) ;this is just in case temperatures exceed 100C and we're in deg F
-	reti
+	ret
 
 Compare_temp:
 	mov temp+0, bcd+2
@@ -798,20 +774,31 @@ Compare_temp:
 	lcall hex2bcd
 	lcall x_lteq_y
 
-	reti
+	ret
 
-Wait_1sec:
-	; Wait 500 ms between conversions
-	mov R2, #250
+check_stop:
+	setb PB4
+	; The input pin used to check set to '1'
+	setb P1.5
+	clr P0.3
+	jb P1.5, stop_PB_Done
+	; Debounce
+	mov R2, #50
 	lcall waitms
-	mov R2, #250
-	lcall waitms
-	; Wait 500 ms between conversions
-	mov R2, #250
-	lcall waitms
-	mov R2, #250
-	lcall waitms
-	reti
+	jb P1.5, stop_PB_Done
+	setb P0.3
+	clr P0.3
+	mov c, P1.5
+	mov PB0, c
+	setb P0.3
+	jnb PB0, start_stop_timer
+
+stop_PB_Done:
+	ret
+start_stop_timer:
+	cpl start_stop_flag
+	sjmp stop_PB_Done
+
 
 Display_special_char1:
 	lcall heart
@@ -887,6 +874,13 @@ clear_screen_func:
     
 main:
 	mov sp, #0x7f
+    mov P0M1, #0x00
+    mov P0M2, #0x00
+    mov P1M1, #0x00
+    mov P1M2, #0x00
+    mov P3M2, #0x00
+    mov P3M2, #0x00
+    
 	lcall Init_All
     lcall LCD_4BIT
     lcall Timer0_Init
@@ -925,6 +919,8 @@ FSM_state0: ;initial state
     mov FSM_state, #1   ; set FSM_state to 1, next state is state1
     Set_Cursor(2, 1)
     Send_Constant_String(#Ramp_to_soak)
+
+
 FSM_state0_done:
     ljmp FSM   ;jump back to FSM and reload FSM_state to a
 
@@ -932,6 +928,7 @@ FSM_state1: ;ramp to soak
     cjne a, #1, FSM_state2
     mov pwm, #100
     clr c
+	lcall check_stop
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
     mov a, #0x3C
     subb a, seconds
@@ -964,6 +961,7 @@ stop_state:
 	ljmp FSM
 
 stop:
+	lcall check_stop
     sjmp stop_state
 
 FSM_state2: ;preheat/soak
@@ -975,6 +973,7 @@ FSM_state2: ;preheat/soak
 	jnb s_flag, FSM_state2_done
 	clr s_flag
 	lcall Display_Data
+	lcall check_stop
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
 	mov a, soak_time    ; set a to soak time
     subb a, seconds    ; temp is our currect sec
@@ -990,6 +989,7 @@ FSM_state3: ;ramp to peak
     Set_Cursor(2, 1)
     Send_Constant_String(#Ramp_to_peak)
     clr c   ; ! i don't know what is c 
+	lcall check_stop
     jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
 	jnb s_flag, FSM_state3_done
 	clr s_flag
@@ -1001,10 +1001,7 @@ FSM_state3: ;ramp to peak
     mov FSM_state, #4
 FSM_state3_done:
     ljmp FSM
-	
-intermediate_state_0:
-	ljmp FSM
-
+    
 intermediate_stop_jump:
 	ljmp stop_state
 
@@ -1017,6 +1014,7 @@ FSM_state4:;reflow
 	jnb s_flag, FSM_state4_done
 	clr s_flag
 	lcall Display_Data
+	lcall check_stop
     jnb start_stop_flag, intermediate_stop_jump; checks the flag if 0, then means stop was pressed, if 1 keep on going
 	mov a, reflow_time    ; set a to reflow time
     subb a, seconds    ; temp is our currect sec
@@ -1033,6 +1031,7 @@ FSM_state5:;cooling
     Set_Cursor(2, 1)
     Send_Constant_String(#Cooling_display)
     clr c
+	lcall check_stop
     jnb start_stop_flag, intermediate_stop_jump ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
 	jnb s_flag, FSM_state5_done
 	clr s_flag
@@ -1046,8 +1045,13 @@ FSM_state5:;cooling
 FSM_state5_done: 
     ljmp FSM
 
+intermediate_state_0:
+	ljmp FSM
+	
 FSM_state6:
 	cjne a, #6, intermediate_state_0
+	
+	setb ET0
 
     lcall Display_special_char1
 
@@ -1103,6 +1107,8 @@ FSM_state6:
 	Wait_Milli_Seconds(#240)
 	Wait_Milli_Seconds(#240)
 
+	lcall clear_screen_func
+    lcall Display_special_char1
 ;-----------------------------------------
 	mov Melody_Reload+1, #high(F5_KEY)
 	mov Melody_Reload+0, #low(F5_KEY)
@@ -1119,6 +1125,9 @@ FSM_state6:
 	mov Melody_Reload+1, #high(E5_KEY)
 	mov Melody_Reload+0, #low(E5_KEY)
 	Wait_Milli_Seconds(#120)
+
+	lcall clear_screen_func
+    lcall Display_special_char2
 ;-----------------------------------------
 	mov Melody_Reload+1, #high(B5_KEY)
 	mov Melody_Reload+0, #low(B5_KEY)
@@ -1135,6 +1144,9 @@ FSM_state6:
 	mov Melody_Reload+1, #high(A5_KEY)
 	mov Melody_Reload+0, #low(A5_KEY)
 	Wait_Milli_Seconds(#120)
+
+	lcall clear_screen_func
+    lcall Display_special_char1
 ;--------------------------------------
 	mov Melody_Reload+1, #high(B5_KEY)
 	mov Melody_Reload+0, #low(B5_KEY)
@@ -1152,11 +1164,16 @@ FSM_state6:
 	mov Melody_Reload+0, #low(A5_KEY)
 	Wait_Milli_Seconds(#120)
 
+	lcall clear_screen_func
+    lcall Display_special_char2
+
 	mov Melody_Reload+1, #high(C6_KEY)
 	mov Melody_Reload+0, #low(C6_KEY)
 	Wait_Milli_Seconds(#240)
 	Wait_Milli_Seconds(#240)
 	
+	lcall clear_screen_func
+    lcall Display_special_char1
 ;----------------------------------------
 	mov Melody_Reload+1, #high(A5_KEY)
 	mov Melody_Reload+0, #low(A5_KEY)
@@ -1165,6 +1182,9 @@ FSM_state6:
 	mov Melody_Reload+1, #high(C6_KEY)
 	mov Melody_Reload+0, #low(C6_KEY)
 	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char2
 ;-----------------------------------------
 	mov Melody_Reload+1, #high(B5_KEY)
 	mov Melody_Reload+0, #low(B5_KEY)
@@ -1173,6 +1193,9 @@ FSM_state6:
 	mov Melody_Reload+1, #high(A5_KEY)
 	mov Melody_Reload+0, #low(A5_KEY)
 	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char1
 
 	mov Melody_Reload+1, #high(G5_KEY)
 	mov Melody_Reload+0, #low(A5_KEY)
@@ -1181,6 +1204,9 @@ FSM_state6:
 	mov Melody_Reload+1, #high(A5_KEY)
 	mov Melody_Reload+0, #low(A5_KEY)
 	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char2
 ;-----------------------------------------
 	mov Melody_Reload+1, #high(B5_KEY)
 	mov Melody_Reload+0, #low(B5_KEY)
@@ -1189,6 +1215,9 @@ FSM_state6:
 	mov Melody_Reload+1, #high(A5_KEY)
 	mov Melody_Reload+0, #low(A5_KEY)
 	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char1
 
 	mov Melody_Reload+1, #high(G5_KEY)
 	mov Melody_Reload+0, #low(A5_KEY)
@@ -1197,6 +1226,9 @@ FSM_state6:
 	mov Melody_Reload+1, #high(A5_KEY)
 	mov Melody_Reload+0, #low(A5_KEY)
 	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char2
 ;-----------------------------------------
 	mov Melody_Reload+1, #high(B5_KEY)
 	mov Melody_Reload+0, #low(B5_KEY)
@@ -1205,6 +1237,9 @@ FSM_state6:
 	mov Melody_Reload+1, #high(A5_KEY)
 	mov Melody_Reload+0, #low(A5_KEY)
 	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char1
 
 	mov Melody_Reload+1, #high(G5_KEY)
 	mov Melody_Reload+0, #low(A5_KEY)
@@ -1214,11 +1249,16 @@ FSM_state6:
 	mov Melody_Reload+0, #low(Fs5_KEY)
 	Wait_Milli_Seconds(#240)
 
+	lcall clear_screen_func
+    lcall Display_special_char2
+
 	mov Melody_Reload+1, #high(E5_KEY)
 	mov Melody_Reload+0, #low(E5_KEY)
 	Wait_Milli_Seconds(#240)
 	Wait_Milli_Seconds(#240)
 
-	clr TR0
+	lcall clear_screen_func
+    lcall Display_special_char1
+
     ljmp main
 END

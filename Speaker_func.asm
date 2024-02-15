@@ -1,8 +1,3 @@
-; ISR_example.asm: a) Increments/decrements a BCD variable every half second using
-; an ISR for timer 2; b) Generates a 2kHz square wave at pin P1.7 using
-; an ISR for timer 0; and c) in the 'main' loop it displays the variable
-; incremented/decremented using the ISR for timer 2 on the LCD.  Also resets it to 
-; zero if the 'CLEAR' push button connected to P1.5 is pressed.
 $NOLIST
 $MODN76E003
 $LIST
@@ -23,22 +18,63 @@ $LIST
 ;
 
 CLK           EQU 16600000 ; Microcontroller system frequency in Hz
-TIMER0_RATE   EQU 523     ; 2048Hz squarewave (peak amplitude of CEM-1203 speaker)
+TIMER0_RATE   EQU 2048     ; 2048Hz squarewave (peak amplitude of CEM-1203 speaker)
 TIMER0_RELOAD EQU ((65536-(CLK/TIMER0_RATE)))
-TIMER2_RATE   EQU 1000     ; 1000Hz, for a timer tick of 1ms
-TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
 
 ;---------------------------------;
 ; Key board                       ;
 ;---------------------------------;
-note_B_4 equ 988
-note_A_4 equ 880
-note_G_s_4 equ 831
-note_C_5 equ 1047
-;----------------------------------
+C3_RATE equ 262
+C3_KEY EQU ((65536-(CLK/C3_RATE)))
+D3_RATE equ 294
+D3_KEY EQU ((65536-(CLK/D3_RATE)))
+B3_RATE equ 494
+B3_KEY EQU ((65536-(CLK/B3_RATE)))
+Gs3_RATE equ 415
+Gs3_KEY EQU ((65536-(CLK/Gs3_RATE)))
+A3_RATE equ 440
+A3_KEY EQU ((65536-(CLK/A3_RATE)))
 
-CLEAR_BUTTON  equ P1.5
-UPDOWN        equ P1.6
+C4_RATE equ 523
+C4_KEY EQU ((65536-(CLK/C4_RATE)))
+D4_RATE equ 587
+D4_KEY EQU ((65536-(CLK/C4_RATE)))
+E4_RATE equ 479
+E4_KEY EQU ((65536-(CLK/E4_RATE)))
+Gs4_RATE equ 831
+Gs4_KEY EQU ((65536-(CLK/Gs4_RATE)))
+A4_RATE equ 880
+A4_KEY EQU ((65536-(CLK/A4_RATE)))
+B4_RATE equ 988
+B4_KEY EQU ((65536-(CLK/B4_RATE)))
+
+C5_RATE equ 1047
+C5_KEY EQU ((65536-(CLK/C5_RATE)))
+D5_RATE equ 1175
+D5_KEY EQU ((65536-(CLK/D5_RATE)))
+Ds5_RATE equ 1245
+Ds5_KEY EQU ((65536-(CLK/Ds5_RATE)))
+E5_RATE equ 1319
+E5_KEY EQU ((65536-(CLK/E5_RATE)))
+F5_RATE equ 1397
+F5_KEY EQU ((65536-(CLK/F5_RATE)))
+Fs5_RATE equ 1480
+Fs5_KEY EQU ((65536-(CLK/Fs5_RATE)))
+G5_RATE equ 1568
+G5_KEY EQU ((65536-(CLK/G5_RATE)))
+Gs5_RATE equ 1661
+Gs5_KEY EQU ((65536-(CLK/Gs5_RATE)))
+A5_RATE equ 1760
+A5_KEY EQU ((65536-(CLK/A5_RATE)))
+B5_RATE equ 1976
+B5_KEY EQU ((65536-(CLK/B5_RATE)))
+
+C6_RATE equ 2093
+C6_KEY EQU ((65536-(CLK/C6_RATE)))
+E6_RATE equ 2637
+E6_KEY EQU ((65536-(CLK/E6_RATE)))
+MUTE_KEY EQU 0
+;----------------------------------
 SOUND_OUT     equ P1.7
 
 ; Reset vector
@@ -64,16 +100,12 @@ org 0x001B
 ; Serial port receive/transmit interrupt vector (not used in this code)
 org 0x0023 
 	reti
-	
-; Timer/Counter 2 overflow interrupt vector
-org 0x002B
-	ljmp Timer2_ISR
+
 
 ; In the 8051 we can define direct access variables starting at location 0x30 up to location 0x7F
 dseg at 0x30
 Count1ms:     ds 2 ; Used to determine when half second has passed
-BCD_counter:  ds 1 ; The BCD counter incrememted in the ISR and displayed in the main loop
-
+Melody_Reload: ds 2
 ; In the 8051 we have variables that are 1-bit in size.  We can use the setb, clr, jb, and jnb
 ; instructions with these variables.  This is how you define a 1-bit variable:
 bseg
@@ -94,8 +126,8 @@ $include(LCD_4bit.inc) ; A library of LCD related functions and utility macros
 $LIST
 
 ;                     1234567890123456    <- This helps determine the location of the counter
-Initial_Message:  db '~Music Test~', 0
-
+Initial_Message:  db '  >Music Test<  ', 0
+clear_screen:	  db '                ', 0
 ;---------------------------------;
 ; Routine to initialize the ISR   ;
 ; for timer 0                     ;
@@ -106,10 +138,10 @@ Timer0_Init:
 	anl a, #0xf0 ; 11110000 Clear the bits for timer 0
 	orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
 	mov TMOD, a
-	mov TH0, #high(TIMER0_RELOAD)
-	mov TL0, #low(TIMER0_RELOAD)
+	;mov TH0, #high(B3_KEY)
+	;mov TL0, #low(B3_KEY)
 	; Enable the timer and interrupts
-    setb ET0  ; Enable timer 0 interrupt
+    ;setb ET0  ; Enable timer 0 interrupt
     setb TR0  ; Start timer 0
 	ret
 
@@ -122,80 +154,170 @@ Timer0_ISR:
 	;clr TF0  ; According to the data sheet this is done for us already.
 	; Timer 0 doesn't have 16-bit auto-reload, so
 	clr TR0
-	mov TH0, #high(TIMER0_RELOAD)
-	mov TL0, #low(TIMER0_RELOAD)
+	;mov TH0, #high(TIMER0_RELOAD)
+	;mov TL0, #low(TIMER0_RELOAD)
+	mov TH0, Melody_Reload+1
+	mov TL0, Melody_Reload+0
 	setb TR0
 	cpl SOUND_OUT ; Connect speaker the pin assigned to 'SOUND_OUT'!
 	reti
 
-;---------------------------------;
-; Routine to initialize the ISR   ;
-; for timer 2                     ;
-;---------------------------------;
-Timer2_Init:
-	mov T2CON, #0 ; Stop timer/counter.  Autoreload mode.
-	mov TH2, #high(TIMER2_RELOAD)
-	mov TL2, #low(TIMER2_RELOAD)
-	; Set the reload value
-	orl T2MOD, #0x80 ; Enable timer 2 autoreload
-	mov RCMP2H, #high(TIMER2_RELOAD)
-	mov RCMP2L, #low(TIMER2_RELOAD)
-	; Init One millisecond interrupt counter.  It is a 16-bit variable made with two 8-bit parts
-	clr a
-	mov Count1ms+0, a
-	mov Count1ms+1, a
-	; Enable the timer and interrupts
-	orl EIE, #0x80 ; Enable timer 2 interrupt ET2=1
-    setb TR2  ; Enable timer 2
-	ret
+double_eighth:
+    mov   A,#48H         ;Load the location where we want to store
+    lcall ?WriteCommand    ;Send the command
+    mov   A,#00H         ;Load row 1 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#0FH         ;Load row 2 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#09H         ;Load row 3 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#09H         ;Load row 4 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#1BH         ;Load row 5 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#1BH         ;Load row 6 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#00H         ;Load row 7 data
+    acall ?WriteData   ;Send the data
+    mov   A,#00H         ;Load row 8 data
+    lcall ?WriteData   ;Send the data
+    ret                  ;Return from routine
+    
+eighth:
+    mov   A,#50H         ;Load the location where we want to store
+    lcall ?WriteCommand    ;Send the command
+    mov   A,#04H         ;Load row 1 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#06H         ;Load row 2 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#05H         ;Load row 3 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#04H         ;Load row 4 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#0CH         ;Load row 5 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#14H         ;Load row 6 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#08H         ;Load row 7 data
+    acall ?WriteData   ;Send the data
+    mov   A,#00H         ;Load row 8 data
+    lcall ?WriteData   ;Send the data
+    ret                  ;Return from routine
 
-;---------------------------------;
-; ISR for timer 2                 ;
-;---------------------------------;
-Timer2_ISR:
-	clr TF2  ; Timer 2 doesn't clear TF2 automatically. Do it in the ISR.  It is bit addressable.
-	cpl P0.4 ; To check the interrupt rate with oscilloscope. It must be precisely a 1 ms pulse.
-	
-	; The two registers used in the ISR must be saved in the stack
-	push acc
-	push psw
-	
-	; Increment the 16-bit one mili second counter
-	inc Count1ms+0    ; Increment the low 8-bits first
-	mov a, Count1ms+0 ; If the low 8-bits overflow, then increment high 8-bits
-	jnz Inc_Done
-	inc Count1ms+1
+heart:
+    mov   A,#58H         ;Load the location where we want to store
+    lcall ?WriteCommand    ;Send the command
+    mov   A,#00H         ;Load row 1 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#0AH         ;Load row 2 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#15H         ;Load row 3 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#11H         ;Load row 4 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#11H         ;Load row 5 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#0AH         ;Load row 6 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#04H         ;Load row 7 data
+    acall ?WriteData   ;Send the data
+    mov   A,#00H         ;Load row 8 data
+    lcall ?WriteData   ;Send the data
+    ret                  ;Return from routine
+bell:
+    mov   A,#60H         ;Load the location where we want to store
+    lcall ?WriteCommand    ;Send the command
+    mov   A,#00H         ;Load row 1 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#04H          ;Load row 2 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#0eH          ;Load row 3 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#0eH         ;Load row 4 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#0eH         ;Load row 5 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#1fH         ;Load row 6 data
+    lcall ?WriteData   ;Send the data
+    mov   A,#00H         ;Load row 7 data
+    acall ?WriteData   ;Send the data
+    mov   A,#04H         ;Load row 8 data
+    lcall ?WriteData   ;Send the data
+    ret                  ;Return from routine
 
-Inc_Done:
-	; Check if half second has passed
-	mov a, Count1ms+0
-	cjne a, #low(50), Timer2_ISR_done ; Warning: this instruction changes the carry flag!
-	mov a, Count1ms+1
-	cjne a, #high(50), Timer2_ISR_done
 	
-	; 500 milliseconds have passed.  Set a flag so the main program knows
-	setb half_seconds_flag ; Let the main program know half second had passed
+Display_special_char1:
+	lcall heart
+	mov a, #0x81
+	lcall ?WriteCommand
+	mov a, #3H
+	lcall ?WriteData
 
-	cpl TR0 ; Enable/disable timer/counter 0. This line creates a beep-silence-beep-silence sound.
-	; Reset to zero the milli-seconds counter, it is a 16-bit variable
+	lcall eighth
+	mov a, #0xC4
+	lcall ?WriteCommand
+	mov a, #2H
+	lcall ?WriteData
 
-	clr a
-	mov Count1ms+0, a
-	mov Count1ms+1, a
-	; Increment the BCD counter
+	lcall bell
+	mov a, #0x87
+	lcall ?WriteCommand
+	mov a, #4H
+	lcall ?WriteData
+
+	lcall double_eighth
+	mov a, #0xCA
+	lcall ?WriteCommand
+	mov a, #1H
+	lcall ?WriteData
+
+	lcall heart
+	mov a, #0x8D
+	lcall ?WriteCommand
+	mov a, #3H
+	lcall ?WriteData
+	reti
 	
-	sjmp Timer2_ISR_da
-Timer2_ISR_decrement:
-	add a, #0x99 ; Adding the 10-complement of -1 is like subtracting 1.
-Timer2_ISR_da:
-	da a ; Decimal adjust instruction.  Check datasheet for more details!
-	mov BCD_counter, a
-	
-Timer2_ISR_done:
-	pop psw
-	pop acc
+Display_special_char2:
+	lcall heart
+	mov a, #0xC0
+	lcall ?WriteCommand
+	mov a, #3H
+	lcall ?WriteData
+
+	lcall eighth
+	mov a, #0x83
+	lcall ?WriteCommand
+	mov a, #2H
+	lcall ?WriteData
+
+	lcall bell
+	mov a, #0xC7
+	lcall ?WriteCommand
+	mov a, #4H
+	lcall ?WriteData
+
+	lcall double_eighth
+	mov a, #0x8B
+	lcall ?WriteCommand
+	mov a, #1H
+	lcall ?WriteData
+
+	lcall heart
+	mov a, #0xCE
+	lcall ?WriteCommand
+	mov a, #3H
+	lcall ?WriteData
 	reti
 
+clear_screen_func:
+    
+    Set_Cursor(1,1)
+	Send_Constant_String(#clear_screen)
+	Set_Cursor(2,1)
+	Send_Constant_String(#clear_screen)
+    ret
+    
 ;---------------------------------;
 ; Main program. Includes hardware ;
 ; initialization and 'forever'    ;
@@ -210,36 +332,223 @@ main:
     mov P1M2, #0x00
     mov P3M2, #0x00
     mov P3M2, #0x00
-          
-    lcall Timer0_Init
-    lcall Timer2_Init
+    
     setb EA   ; Enable Global interrupts
     lcall LCD_4BIT
-    ; For convenience a few handy macros are included in 'LCD_4bit.inc':
-	Set_Cursor(1, 1)
     Send_Constant_String(#Initial_Message)
-    setb half_seconds_flag
-	mov BCD_counter, #0x00
+
+Turkish_March:
+	setb ET0
+
+    ;lcall Display_special_char1
+
+	mov Melody_Reload+1, #high(B3_KEY)
+	mov Melody_Reload+0, #low(B3_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(A3_KEY)
+	mov Melody_Reload+0, #low(A3_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(Gs3_KEY)
+	mov Melody_Reload+0, #low(Gs3_KEY)
+	Wait_Milli_Seconds(#120)
 	
-	; After initialization the program stays in this 'forever' loop
-loop:
-	jb CLEAR_BUTTON, loop_a  ; if the 'CLEAR' button is not pressed skip
-	;Wait_Milli_Seconds(#50)	; Debounce delay.  This macro is also in 'LCD_4bit.inc'
-	jb CLEAR_BUTTON, loop_a  ; if the 'CLEAR' button is not pressed skip
-	jnb CLEAR_BUTTON, $		; Wait for button release.  The '$' means: jump to same instruction.
-	; A valid press of the 'CLEAR' button has been detected, reset the BCD counter.
-	; But first stop timer 2 and reset the milli-seconds counter, to resync everything.
-	clr TR2                 ; Stop timer 2
-	clr a
-	mov Count1ms+0, a
-	mov Count1ms+1, a
-	; Now clear the BCD counter
-	mov BCD_counter, a
-	setb TR2                ; Start timer 2
-	sjmp loop_b             ; Display the new value
-loop_a:
-	jnb half_seconds_flag, loop
-loop_b:
-    ;clr half_seconds_flag ; We clear this flag in the main loop, but it is set in the ISR for timer 2
-    ljmp loop
+	mov Melody_Reload+1, #high(A3_KEY)
+	mov Melody_Reload+0, #low(A3_KEY)
+	Wait_Milli_Seconds(#120)
+
+	;lcall clear_screen_func
+;----------------------------------------
+	lcall Display_special_char2
+
+	mov Melody_Reload+1, #high(C4_KEY)
+	mov Melody_Reload+0, #low(C4_KEY)
+	Wait_Milli_Seconds(#240)
+	Wait_Milli_Seconds(#240)
+	
+    lcall clear_screen_func
+    lcall Display_special_char1
+    
+	mov Melody_Reload+1, #high(D4_KEY)
+	mov Melody_Reload+0, #low(D4_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(C4_KEY)
+	mov Melody_Reload+0, #low(C4_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(B4_KEY)
+	mov Melody_Reload+0, #low(B4_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(C5_KEY)
+	mov Melody_Reload+0, #low(C5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	lcall clear_screen_func
+    lcall Display_special_char2
+	
+	mov Melody_Reload+1, #high(E5_KEY)
+	mov Melody_Reload+0, #low(E5_KEY)
+	Wait_Milli_Seconds(#240)
+	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char1
+;-----------------------------------------
+	mov Melody_Reload+1, #high(F5_KEY)
+	mov Melody_Reload+0, #low(F5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(E5_KEY)
+	mov Melody_Reload+0, #low(E5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(Ds5_KEY)
+	mov Melody_Reload+0, #low(Ds5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(E5_KEY)
+	mov Melody_Reload+0, #low(E5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	lcall clear_screen_func
+    lcall Display_special_char2
+;-----------------------------------------
+	mov Melody_Reload+1, #high(B5_KEY)
+	mov Melody_Reload+0, #low(B5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(Gs5_KEY)
+	mov Melody_Reload+0, #low(Gs5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	lcall clear_screen_func
+    lcall Display_special_char1
+;--------------------------------------
+	mov Melody_Reload+1, #high(B5_KEY)
+	mov Melody_Reload+0, #low(B5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(Gs5_KEY)
+	mov Melody_Reload+0, #low(Gs5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#120)
+
+	lcall clear_screen_func
+    lcall Display_special_char2
+
+	mov Melody_Reload+1, #high(C6_KEY)
+	mov Melody_Reload+0, #low(C6_KEY)
+	Wait_Milli_Seconds(#240)
+	Wait_Milli_Seconds(#240)
+	
+	lcall clear_screen_func
+    lcall Display_special_char1
+;----------------------------------------
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(C6_KEY)
+	mov Melody_Reload+0, #low(C6_KEY)
+	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char2
+;-----------------------------------------
+	mov Melody_Reload+1, #high(B5_KEY)
+	mov Melody_Reload+0, #low(B5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char1
+
+	mov Melody_Reload+1, #high(G5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char2
+;-----------------------------------------
+	mov Melody_Reload+1, #high(B5_KEY)
+	mov Melody_Reload+0, #low(B5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char1
+
+	mov Melody_Reload+1, #high(G5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char2
+;-----------------------------------------
+	mov Melody_Reload+1, #high(B5_KEY)
+	mov Melody_Reload+0, #low(B5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	mov Melody_Reload+1, #high(A5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char1
+
+	mov Melody_Reload+1, #high(G5_KEY)
+	mov Melody_Reload+0, #low(A5_KEY)
+	Wait_Milli_Seconds(#240)
+	
+	mov Melody_Reload+1, #high(Fs5_KEY)
+	mov Melody_Reload+0, #low(Fs5_KEY)
+	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char2
+
+	mov Melody_Reload+1, #high(E5_KEY)
+	mov Melody_Reload+0, #low(E5_KEY)
+	Wait_Milli_Seconds(#240)
+	Wait_Milli_Seconds(#240)
+
+	lcall clear_screen_func
+    lcall Display_special_char1
+	ret
+
+forever:
+	clr TR0
+	sjmp forever
 END

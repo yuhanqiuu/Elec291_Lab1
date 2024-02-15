@@ -138,10 +138,10 @@ Timer0_Init:
 	anl a, #0xf0 ; 11110000 Clear the bits for timer 0
 	orl a, #0x01 ; 00000001 Configure timer 0 as 16-timer
 	mov TMOD, a
-	mov TH0, #high(B3_KEY)
-	mov TL0, #low(B3_KEY)
+	;mov TH0, #high(B3_KEY)
+	;mov TL0, #low(B3_KEY)
 	; Enable the timer and interrupts
-    setb ET0  ; Enable timer 0 interrupt
+    ;setb ET0  ; Enable timer 0 interrupt
     setb TR0  ; Start timer 0
 	ret
 
@@ -176,13 +176,14 @@ main:
     mov P1M2, #0x00
     mov P3M2, #0x00
     mov P3M2, #0x00
-          
-    lcall Timer0_Init
+    
     setb EA   ; Enable Global interrupts
     lcall LCD_4BIT
     Send_Constant_String(#Initial_Message)
 
 Turkish_March:
+	lcall Timer0_Init
+	setb ET0
     mov Melody_Reload+1, #high(B3_KEY)
 	mov Melody_Reload+0, #low(B3_KEY)
 	Wait_Milli_Seconds(#120)
