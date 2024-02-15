@@ -975,6 +975,6 @@
 0966 753F00     783       mov seconds, #0x00     ; set time to 0
 0969 754B00     784       mov FSM_state, #0
 096C 02078A     785            ljmp main
-096F            786   FSM_state5_done:
+096F            786   FSM_state5_done: 
 096F 0207EC     787       ljmp FSM
 0972            788   EN
