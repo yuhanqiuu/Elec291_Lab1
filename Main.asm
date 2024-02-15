@@ -23,8 +23,8 @@ TIMER0_RELOAD EQU ((65536-(CLK/TIMER0_RATE)))
 BAUD              EQU 115200 ; Baud rate of UART in bps
 TIMER1_RELOAD     EQU (0x100-(CLK/(16*BAUD)))
 TIMER0_RELOAD_1MS EQU (0x10000-(CLK/1000))
-TIMER2_RATE   EQU 100     ; 1000Hz, for a timer tick of 1ms
-TIMER2_RELOAD EQU ((65536-(CLK/16*TIMER2_RATE)))
+TIMER2_RATE   EQU 1000     ; 1000Hz, for a timer tick of 1ms
+TIMER2_RELOAD EQU ((65536-(CLK/TIMER2_RATE)))
 
 ;---------------------------------;
 ; Define any buttons & pins here  ;
@@ -71,7 +71,6 @@ Soak_display: 	  db 'Soak 		 s=xxx', 0 ; state 2 display
 Ramp_to_peak: 	  db 'RampToPeak s=xxx', 0 ; state 3 display
 Reflow_display:   db 'Reflow 	 s=xxx', 0 ; state 4 display
 Cooling_display:  db 'Cooling 	 s=xxx', 0 ; state 5 display
-clear_string:     db '                ', 0
 ;---------------------------------------------
 cseg
 
@@ -95,8 +94,7 @@ x:   ds 4
 y:   ds 4
 bcd: ds 5   ;temperature variable for reading
 Count1ms:     ds 2 ; Used to determine when one second has passed
-seconds: ds 1 ;keep track of time
-seconds_counter: ds 1
+seconds: ds 1
 VLED_ADC: ds 2
 reflow_time: ds 1 ; time parameter for reflow	
 reflow_temp: ds 1 ; temp parameter for reflow
@@ -119,6 +117,7 @@ PB1: dbit 1 	; increment reflow time
 PB2: dbit 1 	; increment reflow temp
 PB3: dbit 1 	; increment soak time
 PB4: dbit 1 	; increment soak temp
+FSM_start_flag: dbit 1 ; once it starts the timer2 will start checking for stop pushbutton
 start_stop_flag: dbit 1 ; Set to one if button is pressed to start, press again to stop
 ;---------------------------------------------
 
@@ -190,7 +189,6 @@ Timer2_ISR:
 	; The two registers used in the ISR must be saved in the stack
 	push psw
 	push acc
-
 	inc pwm_counter
 	clr c
 	mov a, pwm
@@ -200,13 +198,10 @@ Timer2_ISR:
 	mov a, pwm_counter
 	cjne a, #100, Timer2_ISR_done
 	mov pwm_counter, #0
-	mov a, seconds
-	add a, #0x01
-	da a
-	mov seconds, a
+	inc seconds
 	setb s_flag
 	
-jb FSM_start_flag, check_stop
+;	jb FSM_start_flag, check_stop
 	
 Timer2_ISR_done:
 
@@ -214,28 +209,28 @@ Timer2_ISR_done:
 	pop psw
 	reti
 
-check_stop:
-	setb PB4
-	; The input pin used to check set to '1'
-	setb P1.5
-	clr P0.3
-	jb P1.5, stop_PB_Done
-	; Debounce
-	mov R2, #50
-	lcall waitms
-	jb P1.5, stop_PB_Done
-	setb P0.3
-	clr P0.3
-	mov c, P1.5
-	mov PB0, c
-	setb P0.3
-	jnb PB0, start_stop_timer
+; check_stop:
+; 	setb PB4
+; 	; The input pin used to check set to '1'
+; 	setb P1.5
+; 	clr P0.3
+; 	jb P1.5, stop_PB_Done
+; 	; Debounce
+; 	mov R2, #50
+; 	lcall waitms
+; 	jb P1.5, stop_PB_Done
+; 	setb P0.3
+; 	clr P0.3
+; 	mov c, P1.5
+; 	mov PB0, c
+; 	setb P0.3
+; 	jnb PB0, start_stop_timer
 	
-stop_PB_Done:
-	ljmp Timer2_ISR_done
-start_stop_timer:
-	cpl start_stop_flag
-	sjmp stop_PB_Done
+; stop_PB_Done:
+; 	ljmp Timer2_ISR_done
+; start_stop_timer:
+; 	cpl start_stop_flag
+; 	sjmp stop_PB_Done
 
 ;---------------------------------;
 ; Temperature senseor function    ;
@@ -357,7 +352,9 @@ LCD_PB:
 	setb P0.3
 	jnb PB0, start_stop
 
-LCD_PB_Done:		
+LCD_PB_Done:
+	mov r2,#20
+	lcall waitms		
 	ret
 
 increment_soak_temp:
@@ -395,9 +392,8 @@ Display_formated_BCD:
 	Set_Cursor(1, 4) ; display To
 	Display_BCD(bcd+3)
 	Display_BCD(bcd+2) ;this is just in case temperatures exceed 100C and we're in deg F
-	Set_Cursor(2,14)
-	mov a, seconds
-	lcall SendToLCD
+	
+
 
 	;send the BCD value to the MATLAB script
 	Send_BCD(bcd+3)
@@ -409,6 +405,11 @@ Display_formated_BCD:
 	lcall putchar
 	;Set_Cursor(1, 13)
 	;Send_Constant_String(#22) ; display Tj=22
+	
+	Set_Cursor(2,14)
+	mov a,seconds
+	lcall SendToLCD
+	
 	ret
 
 SendToLCD:
@@ -451,7 +452,7 @@ Display_PushButtons_LCD:
 
 
 ;-------------------------------------------------;
-; Display all values and temperatures to the LCD� ;
+; Display all values and temperatures to the LCD  ;
 ;-------------------------------------------------;
 Display_Data:
 	clr ADCF
@@ -496,7 +497,7 @@ Display_Data:
 	lcall mul32
 	
 	;convert to temperature
-	Load_y(23500) ;divide by the gain 
+	Load_y(21200) ;divide by the gain 
 	lcall div32 
 	Load_Y(41);load y = 41
 	lcall div32 ;divide by 41
@@ -564,21 +565,22 @@ main:
     lcall Timer2_Init
     setb EA   ; Enable Global interrupts
     ; initial messages in LCD
-	clr start_stop_flag
 	Set_Cursor(1, 1)
     Send_Constant_String(#To_Message)
 	Set_Cursor(2, 1)
     Send_Constant_String(#Time_temp_display)
-	
+    mov FSM_state,#0
 	mov seconds, #0x00
 	mov soak_temp, #0x8C ;140
 	mov soak_time, #0x3C ; 60
 	mov reflow_temp, #0xE6 ; 230
 	mov reflow_time, #0x1E ; 30
-	mov FSM_state,#0
+	
+	clr start_stop_flag
+	clr FSM_start_flag
     
 ;---------------------------------;
-; 		FSM	funtion			      ;
+; 		FSM	funtion			      ;
 ;---------------------------------;
 FSM:
     mov a, FSM_state
@@ -588,12 +590,13 @@ FSM_state0:
 	lcall LCD_PB ; calls and checks the pushbuttons
 	lcall Display_PushButtons_LCD ;Displays values in pushbuttons
     jnb start_stop_flag, FSM_state0_done
+    setb FSM_start_flag
     mov seconds, #0x00     ; set time to 0
     mov FSM_state, #1   ; set FSM_state to 1, next state is state1
     Set_Cursor(2, 1)
     Send_Constant_String(#Ramp_to_soak)
 FSM_state0_done:
-    ljmp FSM    ;jump back to FSM and reload FSM_state to a
+    ljmp FSM   ;jump back to FSM and reload FSM_state to a
 
 FSM_state1:
     cjne a, #1, FSM_state2
@@ -612,7 +615,6 @@ continue:
     mov seconds, #0x00     ; set time to 0
     mov FSM_state, #2
 FSM_state1_done:
-	lcall Wait_1sec
     ljmp FSM
 abort:
     mov a, #0x32  ; set a to 50 degree
@@ -644,7 +646,6 @@ FSM_state2:
     mov seconds, #0x00     ; set time to 0
     mov FSM_state, #3
 FSM_state2_done:
-	lcall Wait_1sec
     ljmp FSM
 
 FSM_state3:
@@ -657,12 +658,10 @@ FSM_state3:
 	lcall Display_Data
 	mov a, reflow_temp    ; set a to reflow temp
 	lcall Compare_temp
-	
     jnb mf, FSM_state3_done
     mov seconds, #0x00     ; set time to 0
     mov FSM_state, #4
 FSM_state3_done:
-	lcall Wait_1sec
     ljmp FSM
 	
 intermediate_state_0:
@@ -685,7 +684,6 @@ FSM_state4:
     mov seconds, #0x00     ; set time to 0
     mov FSM_state, #5
 FSM_state4_done:
-	lcall Wait_1sec
     ljmp FSM
 
 FSM_state5:
@@ -704,6 +702,5 @@ FSM_state5:
     mov seconds, #0x00     ; set time to 0
     mov FSM_state, #0
 FSM_state5_done:
-	lcall Wait_1sec
     ljmp FSM
 END
