@@ -519,6 +519,72 @@ Display_Data:
 ;Grabs the value in register a and then compares it to the current temperature;
 ;-----------------------------------------------------------------------------;
 
+Display_temp:
+	clr ADCF
+	setb ADCS ;  ADC start trigger signal
+    jnb ADCF, $ ; Wait for conversion complete
+    
+    ; Read the ADC result and store in [R1, R0]
+    mov a, ADCRH   
+    swap a
+    push acc
+    anl a, #0x0f
+    mov R1, a
+    pop acc
+    anl a, #0xf0
+    orl a, ADCRL
+    mov R0, A
+    
+    ; Convert to voltage
+	mov x+0, R0
+	mov x+1, R1
+	; Pad other bits with zero
+	mov x+2, #0
+	mov x+3, #0
+	
+	;lcall div32 ; Get V_out
+	; ; Calculate Temp based on V_out
+	; Load_y(27300) ; The reference temp K
+	; lcall sub32 ; Get Temp*0.01
+	; ; Change Temp*0.01 to Temp
+	; Load_y(100)
+	; lcall mul32
+
+	Load_y(50300) ; VCC voltage measured (equals 4.99V)
+	lcall mul32 ;multiplying ADC * Vref
+	Load_y(4095) ; 2^12-1
+	lcall div32 ;now doing (ADC*Vref)/(4095)
+	
+	Load_y(1000) ; for converting volt to microvolt
+	lcall mul32 ;multiplying volts
+	
+	Load_y(10)
+	lcall mul32
+	
+	;convert to temperature
+	Load_y(21200) ;divide by the gain 
+	lcall div32 
+	Load_Y(41);load y = 41
+	lcall div32 ;divide by 41
+	
+	Load_y(10000)
+	lcall mul32
+	
+	Load_Y(220000) ;cold junction 19 deg C
+	lcall add32
+
+; Convert to BCD and display
+	lcall hex2bcd
+	lcall Display_temperature
+
+	reti
+
+Display_temperature:
+	Set_Cursor(1, 4) ; display To
+	Display_BCD(bcd+3)
+	Display_BCD(bcd+2) ;this is just in case temperatures exceed 100C and we're in deg F
+	reti
+
 Compare_temp:
 	mov temp+0, bcd+2
 	mov temp+1, bcd+3
@@ -586,13 +652,12 @@ main:
 ;---------------------------------;
 FSM:
     mov a, FSM_state
-FSM_state0: ;initial
+FSM_state0: ;initial state
     cjne a, #0, FSM_state1
     mov pwm, #0 ; power variable
 	lcall LCD_PB ; calls and checks the pushbuttons
 	lcall Display_PushButtons_LCD ;Displays values in pushbuttons
-	;Set_Cursor(1, 4)
-	;lcall Display_Data
+	lcall Display_temp
     jnb start_stop_flag, FSM_state0_done
     setb FSM_start_flag
     mov seconds, #0x00     ; set time to 0
@@ -602,7 +667,7 @@ FSM_state0: ;initial
 FSM_state0_done:
     ljmp FSM   ;jump back to FSM and reload FSM_state to a
 
-FSM_state1:
+FSM_state1: ;ramp to soak
     cjne a, #1, FSM_state2
     mov pwm, #100
     clr c
@@ -640,7 +705,7 @@ stop_state:
 stop:
     sjmp stop_state
 
-FSM_state2:
+FSM_state2: ;preheat/soak
     cjne a, #2, FSM_state3
     mov pwm, #20
     Set_Cursor(2, 1)
@@ -658,7 +723,7 @@ FSM_state2:
 FSM_state2_done:
     ljmp FSM
 
-FSM_state3:
+FSM_state3: ;ramp to peak
     cjne a, #3, FSM_state4
     mov pwm, #100
     Set_Cursor(2, 1)
@@ -682,7 +747,7 @@ intermediate_state_0:
 intermediate_stop_jump:
 	ljmp stop_state
 
-FSM_state4:
+FSM_state4:;reflow
     cjne a, #4, FSM_state5
     mov pwm, #20
     Set_Cursor(2, 1)
@@ -700,7 +765,7 @@ FSM_state4:
 FSM_state4_done:
     ljmp FSM
 
-FSM_state5:
+FSM_state5:;cooling
     cjne a, #5, intermediate_state_0
     mov pwm, #0
     
@@ -714,9 +779,10 @@ FSM_state5:
 	mov a, #0x3C    ; set a to 60
 	lcall Compare_temp
 
-    jnb mf, FSM_state5_done
+    jb mf, FSM_state5_done
     mov seconds, #0x00     ; set time to 0
     mov FSM_state, #0
-FSM_state5_done:
-    ljmp main
+	ljmp main
+FSM_state5_done: 
+    ljmp FSM
 END
