@@ -21,7 +21,7 @@ CLK           EQU 16600000 ; Microcontroller system frequency in Hz
 TIMER0_RATE   EQU 4096     ; 2048Hz squarewave (peak amplitude of CEM-1203 speaker)
 TIMER0_RELOAD EQU ((65536-(CLK/TIMER0_RATE)))
 BAUD              EQU 115200 ; Baud rate of UART in bps
-TIMER1_RELOAD     EQU (0x100-(CLK/(BAUD)))
+TIMER1_RELOAD     EQU (0x100-(CLK/(16*BAUD)))
 TIMER0_RELOAD_1MS EQU (0x10000-(CLK/1000))
 TIMER2_RATE   EQU 100     ; 100Hz, for a timer tick of 1s
 TIMER2_RELOAD EQU ((65536-(CLK/(16*TIMER2_RATE))))
@@ -536,19 +536,19 @@ Display_formated_BCD:
 	ret
 
 SendToLCD:
-mov b, #100
-div ab
-orl a, #0x30 ; Convert hundreds to ASCII
-lcall ?WriteData ; Send to LCD
-mov a, b ; Remainder is in register b
-mov b, #10
-div ab
-orl a, #0x30 ; Convert tens to ASCII
-lcall ?WriteData; Send to LCD
-mov a, b
-orl a, #0x30 ; Convert units to ASCII
-lcall ?WriteData; Send to LCD
-ret
+	mov b, #100
+	div ab
+	orl a, #0x30 ; Convert hundreds to ASCII
+	lcall ?WriteData ; Send to LCD
+	mov a, b ; Remainder is in register b
+	mov b, #10
+	div ab
+	orl a, #0x30 ; Convert tens to ASCII
+	lcall ?WriteData; Send to LCD
+	mov a, b
+	orl a, #0x30 ; Convert units to ASCII
+	lcall ?WriteData; Send to LCD
+	ret
 
 ;-------------------------------------------------;
 ; Display values from the pushbutton to the LCD   ;
@@ -876,7 +876,7 @@ main:
 	mov soak_time, #0x3C ; 60
 	mov reflow_temp, #0xE6 ; 230
 	mov reflow_time, #0x1E ; 30
-	mov bcd,#0
+	
 	setb TR2
 	
 	clr start_stop_flag
