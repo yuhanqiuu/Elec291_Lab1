@@ -21,7 +21,7 @@ CLK           EQU 16600000 ; Microcontroller system frequency in Hz
 TIMER0_RATE   EQU 4096     ; 2048Hz squarewave (peak amplitude of CEM-1203 speaker)
 TIMER0_RELOAD EQU ((65536-(CLK/TIMER0_RATE)))
 BAUD              EQU 115200 ; Baud rate of UART in bps
-TIMER1_RELOAD     EQU (0x100-(CLK/(BAUD)))
+TIMER1_RELOAD     EQU (0x100-(CLK/(16*BAUD)))
 TIMER0_RELOAD_1MS EQU (0x10000-(CLK/1000))
 TIMER2_RATE   EQU 100     ; 100Hz, for a timer tick of 1s
 TIMER2_RELOAD EQU ((65536-(CLK/(16*TIMER2_RATE))))
@@ -83,7 +83,7 @@ MUTE_KEY EQU 0
 ;---------------------------------;
 ; Define any buttons & pins here  ;
 ;---------------------------------;
-SOUND_OUT   EQU P1.7 ; speaker pin
+SOUND_OUT   EQU P1.2 ; speaker pin
 PWM_OUT    EQU P1.0 ; Logic 1 = oven on
 ;---------------------------------------------
 
@@ -111,8 +111,8 @@ org 0x0023
 	reti
 	
 ; Timer/Counter 2 overflow interrupt vector
-;org 0x002B
-;	ljmp Timer2_ISR
+org 0x002B
+	ljmp Timer2_ISR
 
 ;---------------------------------;
 ; Define any constant string here ;
@@ -340,6 +340,7 @@ Timer2_Init:
 	mov Count1ms+1, a
 	mov pwm, #0
 	; Enable the timer and interrupts
+	mov pwm_counter,#0
 	orl EIE, #0x80 ; Enable timer 2 interrupt ET2=1
     setb TR2  ; Enable timer 2
 	ret
@@ -394,7 +395,6 @@ Init_All:
 	orl	TMOD, #0x20 ; Timer 1 Mode 2
 	mov	TH1, #TIMER1_RELOAD ; TH1=TIMER1_RELOAD;
 	setb TR1
-	
 	; Using timer 0 for delay functions.  Initialize here:
 	;clr	TR0 ; Stop timer 0
 	orl	CKCON,#0x08 ; CLK is the input for timer 0
@@ -402,8 +402,8 @@ Init_All:
 	orl	TMOD,#0x01 ; Timer 0 in Mode 1: 16-bit timer
 	
 	; Initialize the pins used by the ADC (P1.1, P1.7) as input.
-	;orl	P1M1, #0b10000010
-	;anl	P1M2, #0b01111101
+	orl	P1M1, #0b10000010
+	anl	P1M2, #0b01111101
 	
 	; Initialize and start the ADC:
 	anl ADCCON0, #0xF0
@@ -415,6 +415,369 @@ Init_All:
 	
 	ret
 
+;---------------------------------;
+; 	 5_pushbuttons function	      ;
+;---------------------------------;
+LCD_PB:
+	; Set variables to 1: 'no push button pressed'
+	setb PB0
+	setb PB1
+	setb PB2
+	setb PB3
+	setb PB4
+	; The input pin used to check set to '1'
+	setb P1.5
+	
+	; Check if any push button is pressed
+	clr P0.0
+	clr P0.1
+	clr P0.2
+	clr P0.3
+	clr P1.3
+	jb P1.5, LCD_PB_Done
+
+	; Debounce
+	Wait_Milli_Seconds(#50)
+	jb P1.5, LCD_PB_Done
+
+	; Set the LCD data pins to logic 1
+	setb P0.0
+	setb P0.1
+	setb P0.2
+	setb P0.3
+	setb P1.3
+	
+	; Check the push buttons one by one
+	clr P1.3
+	mov c, P1.5
+	mov PB4, c
+	setb P1.3
+	jnb PB4,increment_soak_temp
+
+	clr P0.0
+	mov c, P1.5
+	mov PB3, c
+	setb P0.0
+	jnb PB3, increment_soak_time
+	
+	clr P0.1
+	mov c, P1.5
+	mov PB2, c
+	setb P0.1
+	jnb PB2, increment_reflow_temp
+	
+	clr P0.2
+	mov c, P1.5
+	mov PB1, c
+	setb P0.2
+	jnb PB1, increment_reflow_time
+	
+	clr P0.3
+	mov c, P1.5
+	mov PB0, c
+	setb P0.3
+	jnb PB0, start_stop
+
+LCD_PB_Done:
+	Wait_Milli_Seconds(#25)		
+	ret
+
+increment_soak_temp:
+	inc soak_temp
+	mov a, soak_temp
+	cjne a, #0xF0, LCD_PB_Done
+	mov soak_temp, #0x00
+	sjmp LCD_PB_Done
+increment_soak_time:
+	inc soak_time
+	mov a, soak_time
+	cjne a, #0x78, LCD_PB_Done
+	mov soak_time, #0x00
+	sjmp LCD_PB_Done
+increment_reflow_temp: 
+	inc reflow_temp
+	mov a, reflow_temp
+	cjne a, #0xF0, LCD_PB_Done
+	mov reflow_temp, #0x00
+	sjmp LCD_PB_Done
+increment_reflow_time:
+	inc reflow_time
+	mov a, reflow_time
+	cjne a, #0x4B, LCD_PB_Done
+	mov reflow_time, #0x00
+	sjmp LCD_PB_Done
+
+start_stop:
+	cpl start_stop_flag
+	sjmp LCD_PB_Done
+
+; We can display a number any way we want.  In this case with
+; four decimal places.
+Display_formated_BCD:
+	Set_Cursor(1, 4) ; display To
+	Display_BCD(bcd+3)
+	Display_BCD(bcd+2) ;this is just in case temperatures exceed 100C and we're in deg F
+	
+	;send the BCD value to the MATLAB script
+	Send_BCD(bcd+3)
+	Send_BCD(bcd+2)
+	Send_BCD(bcd+1)
+	Send_BCD(bcd+0)
+	mov a, #'\r'
+	lcall putchar
+	mov a, #'\n'
+	lcall putchar
+	;Set_Cursor(1, 13)
+	;Send_Constant_String(#22) ; display Tj=22
+	
+	Set_Cursor(2,14)
+	mov a,seconds
+	lcall SendToLCD
+	
+	ret
+
+SendToLCD:
+	mov b, #100
+	div ab
+	orl a, #0x30 ; Convert hundreds to ASCII
+	lcall ?WriteData ; Send to LCD
+	mov a, b ; Remainder is in register b
+	mov b, #10
+	div ab
+	orl a, #0x30 ; Convert tens to ASCII
+	lcall ?WriteData; Send to LCD
+	mov a, b
+	orl a, #0x30 ; Convert units to ASCII
+	lcall ?WriteData; Send to LCD
+	ret
+
+;-------------------------------------------------;
+; Display values from the pushbutton to the LCD   ;
+;-------------------------------------------------;
+
+Display_PushButtons_LCD:
+	Set_Cursor(2, 2)
+	mov a, soak_temp
+	lcall SendToLCD
+	
+	Set_Cursor(2, 6)
+	mov a, soak_time
+	lcall SendToLCD
+    
+    Set_Cursor(2, 10)
+    mov a, reflow_temp
+	lcall SendToLCD
+    
+    Set_Cursor(2, 14)
+    mov a, reflow_time
+	lcall SendToLCD
+	
+	ret
+
+
+;-------------------------------------------------;
+; Display all values and temperatures to the LCD  ;
+;-------------------------------------------------;
+Display_Data:
+	clr ADCF
+	setb ADCS ;  ADC start trigger signal
+    jnb ADCF, $ ; Wait for conversion complete
+    
+    ; Read the ADC result and store in [R1, R0]
+    mov a, ADCRH   
+    swap a
+    push acc
+    anl a, #0x0f
+    mov R1, a
+    pop acc
+    anl a, #0xf0
+    orl a, ADCRL
+    mov R0, A
+    
+    ; Convert to voltage
+	mov x+0, R0
+	mov x+1, R1
+	; Pad other bits with zero
+	mov x+2, #0
+	mov x+3, #0
+	
+	;lcall div32 ; Get V_out
+	; ; Calculate Temp based on V_out
+	; Load_y(27300) ; The reference temp K
+	; lcall sub32 ; Get Temp*0.01
+	; ; Change Temp*0.01 to Temp
+	; Load_y(100)
+	; lcall mul32
+
+	Load_y(50300) ; VCC voltage measured (equals 4.99V)
+	lcall mul32 ;multiplying ADC * Vref
+	Load_y(4095) ; 2^12-1
+	lcall div32 ;now doing (ADC*Vref)/(4095)
+	
+	Load_y(1000) ; for converting volt to microvolt
+	lcall mul32 ;multiplying volts
+	
+	Load_y(10)
+	lcall mul32
+	
+	;convert to temperature
+	Load_y(21200) ;divide by the gain 
+	lcall div32 
+	Load_Y(41);load y = 41
+	lcall div32 ;divide by 41
+	
+	Load_y(10000)
+	lcall mul32
+	
+	Load_Y(220000) ;cold junction 19 deg C
+	lcall add32
+	
+	Load_y(2500000)
+	lcall x_gteq_y
+
+	jb mf, too_fucking_hot
+
+; Convert to BCD and display
+	lcall hex2bcd
+	lcall Display_formated_BCD
+	ret
+returned:
+	lcall hex2bcd
+	Set_Cursor(2,14)
+	mov a,seconds
+	lcall SendToLCD
+
+	ret
+	
+too_fucking_hot:
+	Set_Cursor(1,4)
+	Send_Constant_String(#Hot_temp)
+	lcall fire
+	mov a, #0x86
+	lcall ?WriteCommand
+	mov a, #0H
+	lcall ?WriteData
+	
+	sjmp returned
+
+;-----------------------------------------------------------------------------;
+;Grabs the value in register a and then compares it to the current temperature;
+;-----------------------------------------------------------------------------;
+
+Display_temp:
+	clr ADCF
+	setb ADCS ;  ADC start trigger signal
+    jnb ADCF, $ ; Wait for conversion complete
+    
+    ; Read the ADC result and store in [R1, R0]
+    mov a, ADCRH   
+    swap a
+    push acc
+    anl a, #0x0f
+    mov R1, a
+    pop acc
+    anl a, #0xf0
+    orl a, ADCRL
+    mov R0, A
+    
+    ; Convert to voltage
+	mov x+0, R0
+	mov x+1, R1
+	; Pad other bits with zero
+	mov x+2, #0
+	mov x+3, #0
+	
+	;lcall div32 ; Get V_out
+	; ; Calculate Temp based on V_out
+	; Load_y(27300) ; The reference temp K
+	; lcall sub32 ; Get Temp*0.01
+	; ; Change Temp*0.01 to Temp
+	; Load_y(100)
+	; lcall mul32
+
+	Load_y(50300) ; VCC voltage measured (equals 4.99V)
+	lcall mul32 ;multiplying ADC * Vref
+	Load_y(4095) ; 2^12-1
+	lcall div32 ;now doing (ADC*Vref)/(4095)
+	
+	Load_y(1000) ; for converting volt to microvolt
+	lcall mul32 ;multiplying volts
+	
+	Load_y(10)
+	lcall mul32
+	
+	;convert to temperature
+	Load_y(21200) ;divide by the gain 
+	lcall div32 
+	Load_Y(41);load y = 41
+	lcall div32 ;divide by 41
+	
+	Load_y(10000)
+	lcall mul32
+	
+	Load_Y(220000) ;cold junction 19 deg C
+	lcall add32
+
+; Convert to BCD and display
+	lcall hex2bcd
+	lcall Display_temperature
+
+	Wait_Milli_Seconds(#250)
+	ret
+
+Display_temperature:
+	Set_Cursor(1, 4) ; display To
+	Display_BCD(bcd+3)
+	Display_BCD(bcd+2) ;this is just in case temperatures exceed 100C and we're in deg F
+	ret
+
+Compare_temp:
+	mov temp+0, bcd+2
+	mov temp+1, bcd+3
+	mov bcd+0, temp+0
+	mov bcd+1, temp+1
+	mov bcd+2,#0
+	mov bcd+3,#0
+	mov bcd+4,#0
+	
+	lcall bcd2hex
+	
+	mov y+0,x+0
+	mov y+1,x+1
+	mov y+2,x+2
+	mov y+3,x+3
+	
+	mov x+0,a
+	mov x+1,#0
+	mov x+2,#0
+	mov x+3,#0
+	
+	lcall hex2bcd
+	lcall x_lteq_y
+
+	ret
+
+check_stop:
+	setb PB4
+	; The input pin used to check set to '1'
+	setb P1.5
+	clr P0.3
+	jb P1.5, stop_PB_Done
+	; Debounce
+	Wait_Milli_Seconds(#50)
+	jb P1.5, stop_PB_Done
+	setb P0.3
+	clr P0.3
+	mov c, P1.5
+	mov PB0, c
+	setb P0.3
+	jnb PB0, start_stop_timer
+
+stop_PB_Done:
+	ret
+start_stop_timer:
+	cpl start_stop_flag
+	sjmp stop_PB_Done
 
 
 Display_special_char1:
@@ -504,14 +867,176 @@ main:
     lcall Timer2_Init
 	
     setb EA   ; Enable Global interrupts
+    ; initial messages in LCD
+	Set_Cursor(1, 1)
+    Send_Constant_String(#To_Message)
+	Set_Cursor(2, 1)
+    Send_Constant_String(#Time_temp_display)
     mov FSM_state,#0
 	mov seconds, #0x00
 	mov soak_temp, #0x8C ;140
 	mov soak_time, #0x3C ; 60
 	mov reflow_temp, #0xE6 ; 230
 	mov reflow_time, #0x1E ; 30
-	mov bcd,#0
+	
+	setb TR2
+	
+	clr start_stop_flag
+    clr TR0
+;---------------------------------;
+; 		FSM	funtion			      ;
+;---------------------------------;
+FSM:
+    mov a, FSM_state
+FSM_state0: ;initial state
+    cjne a, #0, FSM_state1
+    mov pwm, #0 ; power variable
+	lcall LCD_PB ; calls and checks the pushbuttons
+	lcall Display_PushButtons_LCD ;Displays values in pushbuttons
+	lcall Display_temp
+    jnb start_stop_flag, FSM_state0_done
+    mov seconds, #0x00     ; set time to 0
+    mov FSM_state, #1   ; set FSM_state to 1, next state is state1
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Ramp_to_soak)
+	setb TR0
+	Wait_Milli_Seconds(#250)
+	Wait_Milli_Seconds(#250)
+	clr TR0
+
+FSM_state0_done:
+    ljmp FSM   ;jump back to FSM and reload FSM_state to a
+
+FSM_state1: ;ramp to soak
+    cjne a, #1, FSM_state2
+    mov pwm, #100
+    clr c
+	lcall check_stop
+    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+    mov a, #0x3C
+    subb a, seconds
+    jc abort
+continue:
+    clr c   ; ! i don't know what is c
+	jnb s_flag, FSM_state1_done
+	clr s_flag
+	lcall Display_Data
+	mov a, soak_temp    ; set a to soak temp
+	lcall Compare_temp
+    jnb mf, FSM_state1_done
+    mov seconds, #0x00     ; set time to 0
+    mov FSM_state, #2
+FSM_state1_done:
+    ljmp FSM
+abort:
+    mov a, #0x32  ; set a to 50 degree
+	jnb s_flag, FSM_state1_done
+	lcall Display_Data
+	lcall Compare_temp
+	jb mf, continue ; if temp is larger then 50 degree, go back to continue
+    mov FSM_state, #0   ; abort the FSM
+	ljmp main
+
+stop_state:
     clr TR2
+    jnb start_stop_flag, stop
+	setb TR2
+	ljmp FSM
+
+stop:
+	lcall check_stop
+    sjmp stop_state
+
+FSM_state2: ;preheat/soak
+    cjne a, #2, FSM_state3
+    mov pwm, #20
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Soak_display)
+    clr c   ; ! i don't know what is c 
+	lcall check_stop
+    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+	jnb s_flag, FSM_state2_done
+	clr s_flag
+	lcall Display_Data
+	
+	mov a, soak_time    ; set a to soak time
+    subb a, seconds    ; temp is our currect sec
+    jnc FSM_state2_done
+    mov seconds, #0x00     ; set time to 0
+    mov FSM_state, #3
+FSM_state2_done:
+    ljmp FSM
+
+FSM_state3: ;ramp to peak
+    cjne a, #3, FSM_state4
+    mov pwm, #100
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Ramp_to_peak)
+    clr c   ; ! i don't know what is c 
+	lcall check_stop
+    jnb start_stop_flag, stop_state ; checks the flag if 0, then means stop was pressed, if 1 keep on going
+	jnb s_flag, FSM_state3_done
+	clr s_flag
+	lcall Display_Data
+	mov a, reflow_temp    ; set a to reflow temp
+	lcall Compare_temp
+    jnb mf, FSM_state3_done
+    mov seconds, #0x00     ; set time to 0
+    mov FSM_state, #4
+FSM_state3_done:
+    ljmp FSM
+    
+intermediate_stop_jump:
+	ljmp stop_state
+
+FSM_state4:;reflow
+    cjne a, #4, FSM_state5
+    mov pwm, #20
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Reflow_display)
+    clr c   ; ! i don't know what is c 
+	lcall check_stop
+    jnb start_stop_flag, intermediate_stop_jump; checks the flag if 0, then means stop was pressed, if 1 keep on going
+	jnb s_flag, FSM_state4_done
+	clr s_flag
+	lcall Display_Data
+	
+	mov a, reflow_time    ; set a to reflow time
+    subb a, seconds    ; temp is our currect sec
+    jnc FSM_state4_done
+    mov seconds, #0x00     ; set time to 0
+    mov FSM_state, #5
+FSM_state4_done:
+    ljmp FSM
+
+FSM_state5:;cooling
+    cjne a, #5, FSM_state6
+    mov pwm, #0
+    
+    Set_Cursor(2, 1)
+    Send_Constant_String(#Cooling_display)
+    clr c
+	lcall check_stop
+    jnb start_stop_flag, intermediate_stop_jump ; checks the flag if 0, then means stop was pressed, if 1 keep on going 
+	jnb s_flag, FSM_state5_done
+	clr s_flag
+	lcall Display_Data
+	mov a, #0x3C    ; set a to 60
+	lcall Compare_temp
+
+    jb mf, FSM_state5_done
+    mov seconds, #0x00     ; set time to 0
+    mov FSM_state, #6
+FSM_state5_done: 
+    ljmp FSM
+
+intermediate_state_0:
+	ljmp FSM
+	
+FSM_state6:
+	cjne a, #6, intermediate_state_0
+	clr TR2
+	setb TR0
 	setb ET0
 
     lcall Display_special_char1
@@ -719,5 +1244,5 @@ main:
 
 	lcall clear_screen_func
     lcall Display_special_char1
-
+    ljmp main
 END

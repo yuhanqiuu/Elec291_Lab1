@@ -38,7 +38,7 @@ B3_KEY EQU ((65536-(CLK/B3_RATE)))
 Gs3_RATE equ 415
 Gs3_KEY EQU ((65536-(CLK/Gs3_RATE)))
 A3_RATE equ 440
-A3_KEY EQU ((65536-(CLK/A3_RATE)))
+A3_KEY EQU ((65536-(CLK/A3_RATE))) 
 
 C4_RATE equ 523
 C4_KEY EQU ((65536-(CLK/C4_RATE)))
@@ -721,7 +721,7 @@ Display_temp:
 ; Convert to BCD and display
 	lcall hex2bcd
 	lcall Display_temperature
-
+	
 	ret
 
 Display_temperature:
@@ -892,8 +892,13 @@ FSM_state0: ;initial state
     mov pwm, #0 ; power variable
 	lcall LCD_PB ; calls and checks the pushbuttons
 	lcall Display_PushButtons_LCD ;Displays values in pushbuttons
+    jb start_stop_flag, start_timer
+	jnb s_flag, FSM_state1_done
+	clr s_flag
 	lcall Display_temp
-    jnb start_stop_flag, FSM_state0_done
+FSM_state0_done:
+    ljmp FSM   ;jump back to FSM and reload FSM_state to a
+start_timer:
     mov seconds, #0x00     ; set time to 0
     mov FSM_state, #1   ; set FSM_state to 1, next state is state1
     Set_Cursor(2, 1)
@@ -902,9 +907,9 @@ FSM_state0: ;initial state
 	Wait_Milli_Seconds(#250)
 	Wait_Milli_Seconds(#250)
 	clr TR0
+	sjmp FSM_state0_done
 
-FSM_state0_done:
-    ljmp FSM   ;jump back to FSM and reload FSM_state to a
+
 
 FSM_state1: ;ramp to soak
     cjne a, #1, FSM_state2
