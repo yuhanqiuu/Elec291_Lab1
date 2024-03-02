@@ -635,7 +635,7 @@ Display_Data:
 	Load_y(2500000)
 	lcall x_gteq_y
 
-	jb mf, too_fucking_hot
+	jb mf, too_hot
 
 ; Convert to BCD and display
 	lcall hex2bcd
@@ -649,7 +649,7 @@ returned:
 
 	ret
 	
-too_fucking_hot:
+too_hot:
 	Set_Cursor(1,4)
 	Send_Constant_String(#Hot_temp)
 	lcall fire

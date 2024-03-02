@@ -1,7 +1,7 @@
 0000              1   ;--------------------------------------------------------
 0000              2   ; File Created by C51
 0000              3   ; Version 1.0.0 #1170 (Feb 16 2022) (MSVC)
-0000              4   ; This file was generated Tue Feb 20 13:46:38 2024
+0000              4   ; This file was generated Sat Feb 24 11:42:57 2024
 0000              5   ;--------------------------------------------------------
                   5   $name hello
                   6   $optc51 --model-small
@@ -557,7 +557,7 @@
 0018            557   ;        C:\Users\qiuyu\OneDrive\Documents\GitHub\Elec291_Lab1\hello.c:18: while ((CLKSEL & 0x80) == 0)
 0018            558   L002001?:
 0018 E5A9       559            mov     a,_CLKSEL
-001A 20E798     560            jb      acc.7,L002003?
+001A 20E748     560            jb      acc.7,L002003?
 001D            561   ;        C:\Users\qiuyu\OneDrive\Documents\GitHub\Elec291_Lab1\hello.c:19: P0MDOUT |= 0x10; // Enable UART0 TX as push-pull output
 001D 43A410     562            orl     _P0MDOUT,#0x10
 0020 8000       563            sjmp    L002001?
@@ -597,9 +597,9 @@
 0045            597   ;        -----------------------------------------
 0045            598   _main:
 0045            599   ;        C:\Users\qiuyu\OneDrive\Documents\GitHub\Elec291_Lab1\hello.c:36: printf( "Hello, world!\r\n" );
-0045 7418       600            mov     a,#__str_0
+0045 74C8       600            mov     a,#__str_0
 0047 C0E0       601            push    acc
-0049 74AE       602            mov     a,#(__str_0 >> 8)
+0049 74AD       602            mov     a,#(__str_0 >> 8)
 004B C0E0       603            push    acc
 004D 7480       604            mov     a,#0x80
 004F C0E0       605            push    acc
