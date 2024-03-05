@@ -910,7 +910,6 @@ start_timer:
 	sjmp FSM_state0_done
 
 
-
 FSM_state1: ;ramp to soak
     cjne a, #1, FSM_state2
     mov pwm, #100
